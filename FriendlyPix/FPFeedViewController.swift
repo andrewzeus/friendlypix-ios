@@ -23,7 +23,9 @@ import MaterialComponents
 class FPFeedViewController: UICollectionViewController, UICollectionViewDelegateFlowLayout, FPCardCollectionViewCellDelegate {
   var currentUser: User!
   lazy var uid = currentUser.uid
+  
   var followingRef: DatabaseReference?
+  
   lazy var authViewController: UINavigationController = {
     let controller = FUIAuth.defaultAuthUI()!.authViewController()
     controller.navigationBar.isHidden = true
