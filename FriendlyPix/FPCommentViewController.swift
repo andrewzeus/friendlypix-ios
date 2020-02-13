@@ -25,8 +25,10 @@ class FPCommentViewController: UICollectionViewController, UITextViewDelegate {
   lazy var uid = currentUser.uid
 
   lazy var database = Database.database()
-  lazy var commentsRef = database.reference(withPath: "comments/\(post.postID)")
+  
+    lazy var commentsRef = database.reference(withPath: "comments/\(post.postID)")
   var commentQuery: DatabaseQuery!
+    
   let attributes = [NSAttributedString.Key.font: UIFont.mdc_preferredFont(forMaterialTextStyle: .body2)]
   let attributes2 = [NSAttributedString.Key.font: UIFont.mdc_preferredFont(forMaterialTextStyle: .body1)]
   var bottomConstraint: NSLayoutConstraint!
@@ -34,13 +36,16 @@ class FPCommentViewController: UICollectionViewController, UITextViewDelegate {
   var inputBottomConstraint: NSLayoutConstraint!
   var sendBottomConstraint: NSLayoutConstraint!
   var editingIndex: IndexPath!
+    
   let messageInputContainerView: UIView = {
     let view = UIView()
     view.backgroundColor = .white
     return view
   }()
+    
   var requestWorkItem: DispatchWorkItem?
-  var isEditingComment = false
+  
+    var isEditingComment = false
   var isKeyboardShown = false
 
   let commentDeleteText = MDCSnackbarMessage.init(text: "Comment deleted")
@@ -180,13 +185,17 @@ class FPCommentViewController: UICollectionViewController, UITextViewDelegate {
                                     argument: collectionView)
     MDCSnackbarManager.setBottomOffset(0)
     isEditingComment = false
+    
     let lastCommentId = comments.last?.commentID
+    
     commentQuery = commentsRef
+    
     if let lastCommentId = lastCommentId {
       commentQuery = commentQuery.queryOrderedByKey().queryStarting(atValue: lastCommentId)
     } else {
       inputTextView.becomeFirstResponder()
     }
+    
     commentQuery.observe(.childAdded, with: { dataSnaphot in
       if dataSnaphot.key != lastCommentId && !self.appDelegate.isBlocked(dataSnaphot){
         self.comments.append(FPComment(snapshot: dataSnaphot))
@@ -197,12 +206,14 @@ class FPCommentViewController: UICollectionViewController, UITextViewDelegate {
                                         argument: self.updatedLabel)
       }
     })
+    
     commentsRef.observe(.childRemoved) { dataSnaphot in
       if let index = self.comments.firstIndex(where: {$0.commentID == dataSnaphot.key}) {
         self.comments.remove(at: index)
         self.collectionView?.deleteItems(at: [IndexPath(item: index, section: 1)])
       }
     }
+    
     commentsRef.observe(.childChanged) { dataSnaphot in
       if let value = dataSnaphot.value as? [String: Any],
         let index = self.comments.firstIndex(where: {$0.commentID == dataSnaphot.key}) {
@@ -221,9 +232,12 @@ class FPCommentViewController: UICollectionViewController, UITextViewDelegate {
     inputTextView.endEditing(true)
     super.viewWillDisappear(animated)
     self.navigationController?.setToolbarHidden(true, animated: false)
+    
     self.commentsRef.removeAllObservers()
     self.commentQuery.removeAllObservers()
+    
     MDCSnackbarManager.dismissAndCallCompletionBlocks(withCategory: nil)
+    
     requestWorkItem?.perform()
   }
 

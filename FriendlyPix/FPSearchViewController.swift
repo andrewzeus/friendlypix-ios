@@ -20,8 +20,10 @@ import MaterialComponents
 class FPSearchViewController: UICollectionViewController, UISearchBarDelegate, UISearchControllerDelegate {
   
   let searchController = UISearchController(searchResultsController: nil)
+  
   let peopleRef = Database.database().reference(withPath: "people")
   let hashtagsRef = Database.database().reference(withPath: "hashtags")
+  
   lazy var appDelegate = UIApplication.shared.delegate as! AppDelegate
   lazy var uid = Auth.auth().currentUser!.uid
   var people = [FPUser]()
@@ -126,8 +128,8 @@ class FPSearchViewController: UICollectionViewController, UISearchBarDelegate, U
       self?.hashtags = [String]()
       self?.collectionView?.reloadData()
       self?.collectionView?.performBatchUpdates({
-        self?.search(searchString, at: "full_name")
-        self?.search(searchString, at: "reversed_full_name")
+        self?.searchPeople(searchString, at: "full_name")
+        self?.searchPeople(searchString, at: "reversed_full_name")
         self?.searchHashtags(searchString)
       }, completion: nil)
     }
@@ -138,7 +140,7 @@ class FPSearchViewController: UICollectionViewController, UISearchBarDelegate, U
                                   execute: requestWorkItem)
   }
 
-  private func search(_ searchString: String, at index: String) {
+  private func searchPeople(_ searchString: String, at index: String) {
     peopleRef.queryOrdered(byChild: "_search_index/\(index)").queryStarting(atValue: searchString)
       .queryLimited(toFirst: 10).observeSingleEvent(of: .value, with: { snapshot in
         let enumerator = snapshot.children

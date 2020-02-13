@@ -32,6 +32,7 @@
 		10FD8FE01F7E840800BCB991 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 10FD8FDF1F7E840800BCB991 /* Assets.xcassets */; };
 		10FEA3D41FAB927200BAD9FD /* FPPostDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10FEA3D31FAB927200BAD9FD /* FPPostDetailViewController.swift */; };
 		10FEF57D20474EE400423CF7 /* FriendlyPixTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10FEF57C20474EE400423CF7 /* FriendlyPixTests.swift */; };
+		6161B1FB89AAB5A26ACEF9E1 /* Pods_FriendlyPix.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 830AAFE3A70E512929875246 /* Pods_FriendlyPix.framework */; };
 		B413B186209C176100332850 /* FriendlyPixUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B413B185209C176100332850 /* FriendlyPixUITests.swift */; };
 /* End PBXBuildFile section */
 
@@ -83,6 +84,9 @@
 		10FEF57A20474EE400423CF7 /* FriendlyPixTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FriendlyPixTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		10FEF57C20474EE400423CF7 /* FriendlyPixTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendlyPixTests.swift; sourceTree = "<group>"; };
 		10FEF57E20474EE400423CF7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		830AAFE3A70E512929875246 /* Pods_FriendlyPix.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_FriendlyPix.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		9526980BF499FCAD1DBC723A /* Pods-FriendlyPix.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FriendlyPix.debug.xcconfig"; path = "Target Support Files/Pods-FriendlyPix/Pods-FriendlyPix.debug.xcconfig"; sourceTree = "<group>"; };
+		A58EB0F85788D333FD4BB6AE /* Pods-FriendlyPix.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FriendlyPix.release.xcconfig"; path = "Target Support Files/Pods-FriendlyPix/Pods-FriendlyPix.release.xcconfig"; sourceTree = "<group>"; };
 		B413B183209C176100332850 /* FriendlyPixUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FriendlyPixUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B413B185209C176100332850 /* FriendlyPixUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendlyPixUITests.swift; sourceTree = "<group>"; };
 		B413B187209C176100332850 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -93,6 +97,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6161B1FB89AAB5A26ACEF9E1 /* Pods_FriendlyPix.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -122,6 +127,7 @@
 				B413B184209C176100332850 /* FriendlyPixUITests */,
 				10FD8FD41F7E840800BCB991 /* Products */,
 				3EB5B8C2B2430270CBBFD174 /* Pods */,
+				2157D8B5DA8D690804D84BD8 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -176,9 +182,19 @@
 			path = FriendlyPixTests;
 			sourceTree = "<group>";
 		};
+		2157D8B5DA8D690804D84BD8 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				830AAFE3A70E512929875246 /* Pods_FriendlyPix.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		3EB5B8C2B2430270CBBFD174 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
+				9526980BF499FCAD1DBC723A /* Pods-FriendlyPix.debug.xcconfig */,
+				A58EB0F85788D333FD4BB6AE /* Pods-FriendlyPix.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -199,10 +215,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 10FD8FE71F7E840800BCB991 /* Build configuration list for PBXNativeTarget "FriendlyPix" */;
 			buildPhases = (
+				25E337474A9B4062A13B4F94 /* [CP] Check Pods Manifest.lock */,
 				10FD8FCF1F7E840800BCB991 /* Sources */,
 				10FD8FD01F7E840800BCB991 /* Frameworks */,
 				10FD8FD11F7E840800BCB991 /* Resources */,
 				10A1818620607B4900133918 /* ShellScript */,
+				2A1DE0D0C4FE34E4F7C11450 /* [CP] Embed Pods Frameworks */,
+				29EE797E6D8740755212A842 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -358,6 +377,104 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/FirebaseCrashlytics/run\"\n";
+		};
+		25E337474A9B4062A13B4F94 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-FriendlyPix-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		29EE797E6D8740755212A842 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-FriendlyPix/Pods-FriendlyPix-resources.sh",
+				"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseUI/FirebaseAnonymousAuthUI.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseUI/FirebaseAuthUI.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseUI/FirebaseGoogleAuthUI.bundle",
+				"${PODS_ROOT}/GoogleSignIn/Resources/GoogleSignIn.bundle",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FirebaseAnonymousAuthUI.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FirebaseAuthUI.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/FirebaseGoogleAuthUI.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleSignIn.bundle",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-FriendlyPix/Pods-FriendlyPix-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		2A1DE0D0C4FE34E4F7C11450 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-FriendlyPix/Pods-FriendlyPix-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/AppAuth/AppAuth.framework",
+				"${BUILT_PRODUCTS_DIR}/Cache/Cache.framework",
+				"${BUILT_PRODUCTS_DIR}/GTMAppAuth/GTMAppAuth.framework",
+				"${BUILT_PRODUCTS_DIR}/GTMSessionFetcher/GTMSessionFetcher.framework",
+				"${BUILT_PRODUCTS_DIR}/GoogleAPIClientForREST/GoogleAPIClientForREST.framework",
+				"${BUILT_PRODUCTS_DIR}/GoogleToolboxForMac/GoogleToolboxForMac.framework",
+				"${BUILT_PRODUCTS_DIR}/GoogleUtilities/GoogleUtilities.framework",
+				"${BUILT_PRODUCTS_DIR}/ImagePicker/ImagePicker.framework",
+				"${BUILT_PRODUCTS_DIR}/Imaginary/Imaginary.framework",
+				"${BUILT_PRODUCTS_DIR}/Lightbox/Lightbox.framework",
+				"${BUILT_PRODUCTS_DIR}/MDFInternationalization/MDFInternationalization.framework",
+				"${BUILT_PRODUCTS_DIR}/MDFTextAccessibility/MDFTextAccessibility.framework",
+				"${BUILT_PRODUCTS_DIR}/MaterialComponents/MaterialComponents.framework",
+				"${BUILT_PRODUCTS_DIR}/PromisesObjC/FBLPromises.framework",
+				"${BUILT_PRODUCTS_DIR}/Protobuf/protobuf.framework",
+				"${BUILT_PRODUCTS_DIR}/SDWebImage/SDWebImage.framework",
+				"${BUILT_PRODUCTS_DIR}/leveldb-library/leveldb.framework",
+				"${BUILT_PRODUCTS_DIR}/nanopb/nanopb.framework",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/AppAuth.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Cache.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/GTMAppAuth.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/GTMSessionFetcher.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/GoogleAPIClientForREST.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/GoogleToolboxForMac.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/GoogleUtilities.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ImagePicker.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Imaginary.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Lightbox.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/MDFInternationalization.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/MDFTextAccessibility.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/MaterialComponents.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FBLPromises.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/protobuf.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SDWebImage.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/leveldb.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/nanopb.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-FriendlyPix/Pods-FriendlyPix-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -545,6 +662,7 @@
 		};
 		10FD8FE81F7E840800BCB991 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9526980BF499FCAD1DBC723A /* Pods-FriendlyPix.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = FriendlyPix/FriendlyPix.entitlements;
@@ -564,6 +682,7 @@
 		};
 		10FD8FE91F7E840800BCB991 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A58EB0F85788D333FD4BB6AE /* Pods-FriendlyPix.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = FriendlyPix/FriendlyPix.entitlements;
