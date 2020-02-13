@@ -45,7 +45,7 @@ class FPCommentViewController: UICollectionViewController, UITextViewDelegate {
     
   var requestWorkItem: DispatchWorkItem?
   
-    var isEditingComment = false
+  var isEditingComment = false
   var isKeyboardShown = false
 
   let commentDeleteText = MDCSnackbarMessage.init(text: "Comment deleted")

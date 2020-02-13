@@ -32,9 +32,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   var blockingRef: DatabaseReference!
   let gcmMessageIDKey = "gcm.message_id"
   var notificationGranted = false
+    
   private var blocked = Set<String>()
   private var blocking = Set<String>()
-  static var euroZone: Bool = {
+  
+    static var euroZone: Bool = {
     switch Locale.current.regionCode {
     case "CH", "AT", "IT", "BE", "LV", "BG", "LT", "HR", "LX", "CY", "MT", "CZ", "NL", "DK",
          "PL", "EE", "PT", "FI", "RO", "FR", "SK", "DE", "SI", "GR", "ES", "HU", "SE", "IE", "GB":
