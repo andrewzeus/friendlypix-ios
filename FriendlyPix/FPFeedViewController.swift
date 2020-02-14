@@ -21,8 +21,9 @@ import Lightbox
 import MaterialComponents
 
 class FPFeedViewController: UICollectionViewController, UICollectionViewDelegateFlowLayout, FPCardCollectionViewCellDelegate {
+    
   var currentUser: User!
-  lazy var uid = currentUser.uid
+  lazy var currentUserId = currentUser.uid
   
   var followingRef: DatabaseReference?
   
@@ -34,15 +35,19 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
 
   lazy var database = Database.database()
   lazy var ref = self.database.reference()
+    
   lazy var postsRef = self.database.reference(withPath: "posts")
   lazy var commentsRef = self.database.reference(withPath: "comments")
   lazy var likesRef = self.database.reference(withPath: "likes")
+  
   lazy var appDelegate = UIApplication.shared.delegate as! AppDelegate
 
   var floatingButtonOffset: CGFloat = 0.0
   var spinner: UIView?
+  
   static let postsPerLoad: Int = 3
   static let postsLimit: UInt = 4
+  
   var lightboxCurrentPage: Int?
 
   let emptyHomeLabel: UILabel = {
@@ -59,24 +64,33 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
   var query: DatabaseReference!
   var posts = [FPPost]()
   var loadingPostCount = 0
+  
   var nextEntry: String?
+    
   var sizingCell: FPCardCollectionViewCell!
   let bottomBarView = MDCBottomAppBarView()
   var showFeed = false
+    
   let homeButton = { () -> UIBarButtonItem in
     let button = UIBarButtonItem(image: #imageLiteral(resourceName: "ic_home"), style: .plain, target: self, action: #selector(homeAction))
     button.accessibilityLabel = "Home"
     return button
   }()
+    
   let feedButton = { () -> UIBarButtonItem in
     let button = UIBarButtonItem(image: #imageLiteral(resourceName: "ic_trending_up"), style: .plain, target: self, action: #selector(feedAction))
     button.accessibilityLabel = "Feed"
     return button
   }()
+    
   let blue = MDCPalette.blue.tint600
+    
   var observers = [DatabaseQuery]()
+    
   var newPost = false
+    
   var followChanged = false
+  
   var isFirstOpen = true
 
   func showLightbox(_ index: Int) {
@@ -214,8 +228,8 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     if let currentUser = Auth.auth().currentUser  {
       self.currentUser = currentUser
       bottomBarView.floatingButton.isEnabled = !currentUser.isAnonymous
-      Crashlytics.crashlytics().setUserID(uid)
-      self.followingRef = database.reference(withPath: "people/\(uid)/following")
+      Crashlytics.crashlytics().setUserID(currentUserId)
+      self.followingRef = database.reference(withPath: "people/\(currentUserId)/following")
     } else {
       self.present(authViewController, animated: true, completion: nil)
       return
@@ -351,7 +365,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
       loadFeed()
       listenDeletes()
     } else {
-      query = database.reference(withPath: "feed/\(uid)")
+      query = database.reference(withPath: "feed/\(currentUserId)")
       // Make sure the home feed is updated with followed users's new posts.
       // Only after the feed creation is complete, start fetching the posts.
       updateHomeFeeds()
@@ -437,7 +451,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
                       self.loadPost(snapshot)
                     } else {
                       self.loadingPostCount -= 1
-                      self.database.reference(withPath: "feed/\(self.uid)/\(snapshot.key)").removeValue()
+                      self.database.reference(withPath: "feed/\(self.currentUserId)/\(snapshot.key)").removeValue()
                     }
                   }
                 }
@@ -495,9 +509,9 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     let likesQuery = self.likesRef.child(post.postID)
     likesQuery.observe(.value, with: {
       let count = Int($0.childrenCount)
-      if post.likeCount != count || post.isLiked != $0.hasChild(self.uid){
+      if post.likeCount != count || post.isLiked != $0.hasChild(self.currentUserId){
         post.likeCount = count
-        post.isLiked = $0.hasChild(self.uid)
+        post.isLiked = $0.hasChild(self.currentUserId)
         if let index = self.posts.firstIndex(where: {$0.postID == post.postID}) {
           self.collectionView?.reloadItems(at: [IndexPath(item: index, section: 0)])
         }
@@ -599,7 +613,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
   }
 
   func toogleLike(_ post: FPPost, label: UILabel) {
-    let postLike = database.reference(withPath: "likes/\(post.postID)/\(uid)")
+    let postLike = database.reference(withPath: "likes/\(post.postID)/\(currentUserId)")
     if post.isLiked {
       postLike.removeValue { error, _ in
         if let error = error {
@@ -619,12 +633,12 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
 
   func optionPost(_ post: FPPost, _ button: UIButton, completion: (() -> Swift.Void)? = nil) {
     let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-    if post.author.uid != uid {
+    if post.author.uid != currentUserId {
       alert.addAction(UIAlertAction(title: "Report", style: .destructive , handler:{ _ in
         let alertController = MDCAlertController.init(title: "Report Post?", message: nil)
         let cancelAction = MDCAlertAction(title: "Cancel", handler: nil)
         let reportAction = MDCAlertAction(title: "Report") { _ in
-          self.database.reference(withPath: "postFlags/\(post.postID)/\(self.uid)").setValue(true)
+          self.database.reference(withPath: "postFlags/\(post.postID)/\(self.currentUserId)").setValue(true)
         }
         alertController.addAction(reportAction)
         alertController.addAction(cancelAction)
@@ -636,11 +650,11 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
         let cancelAction = MDCAlertAction(title: "Cancel", handler: nil)
         let deleteAction = MDCAlertAction(title: "Delete") { _ in
           let postID = post.postID
-          let update = [ "people/\(self.uid)/posts/\(postID)": NSNull(),
+          let update = [ "people/\(self.currentUserId)/posts/\(postID)": NSNull(),
                          "comments/\(postID)": NSNull(),
                          "likes/\(postID)": NSNull(),
                          "posts/\(postID)": NSNull(),
-                         "feed/\(self.uid)/\(postID)": NSNull()]
+                         "feed/\(self.currentUserId)/\(postID)": NSNull()]
           self.ref.updateChildValues(update) { error, reference in
             if let error = error {
               print(error.localizedDescription)
@@ -705,8 +719,8 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
       }
       followedUserPostsRef.observe(.childAdded, with: { postSnapshot in
         if postSnapshot.key != followingSnapshot.key {
-          let updates = ["/feed/\(self.uid)/\(postSnapshot.key)": true,
-                         "/people/\(self.uid)/following/\(followedUid)": postSnapshot.key] as [String: Any]
+          let updates = ["/feed/\(self.currentUserId)/\(postSnapshot.key)": true,
+                         "/people/\(self.currentUserId)/following/\(followedUid)": postSnapshot.key] as [String: Any]
           self.ref.updateChildValues(updates)
         }
       })
@@ -747,8 +761,8 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
           if let postArray = postSnapshot.value as? [String: Any] {
             var updates = [AnyHashable: Any]()
             for postId in postArray.keys where postId != lastSyncedPost {
-              updates["/feed/\(self.uid)/\(postId)"] = true
-              updates["/people/\(self.uid)/following/\(followedUid)"] = postId
+              updates["/feed/\(self.currentUserId)/\(postId)"] = true
+              updates["/people/\(self.currentUserId)/following/\(followedUid)"] = postId
             }
             self.ref.updateChildValues(updates, withCompletionBlock: { error, reference in
               myGroup.leave()
