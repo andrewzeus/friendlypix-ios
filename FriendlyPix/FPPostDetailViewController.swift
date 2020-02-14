@@ -22,7 +22,7 @@ class FPPostDetailViewController: FPFeedViewController {
 
   override func loadDataWithoutResettingEverything() {
     
-    if let post = posts.first {
+    if let post = fpPosts.first {
       
         postsRef.child(post.postID).observeSingleEvent(of: .value, with: {
             
@@ -40,6 +40,7 @@ class FPPostDetailViewController: FPFeedViewController {
   }
 
   override func optionPost(_ post: FPPost, _ button: UIButton, completion: (() -> Swift.Void)? = nil) {
+    
     super.optionPost(post, button, completion: { self.navigationController?.popViewController(animated: true) })
   }
 

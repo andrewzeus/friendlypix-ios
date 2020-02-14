@@ -64,7 +64,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
 
   var query: DatabaseReference!
     
-  var posts = [FPPost]()
+  var fpPosts = [FPPost]()
     
   var loadingPostCount = 0
   
@@ -99,7 +99,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
   var isFirstOpenFlag = true
 
   func showLightbox(_ index: Int) {
-    let lightboxImages = posts.map {
+    let lightboxImages = fpPosts.map {
       return LightboxImage(imageURL: $0.fullURL, text: "\($0.author.fullname): \($0.text)")
     }
 
@@ -159,6 +159,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     moreButton.tintColor = .gray
     moreButton.accessibilityLabel = "more"
     bottomBarView.trailingBarButtonItems = [ moreButton ]
+    
   }
 
   lazy var moreAlert: UIAlertController = {
@@ -223,7 +224,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     
     observers = [DatabaseQuery]()
     
-    posts = [FPPost]()
+    fpPosts = [FPPost]()
     
     loadingPostCount = 0
     
@@ -416,9 +417,9 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
         
         query = postsRef
     
-        loadFPPostsWithCommentsAndLikes()
+        loadAllFPPostsWithCommentsAndLikes()
         
-        listenFPPostsForDeletes()
+        listenAllFPPostsForDeletes()
         
     } else {
         
@@ -431,13 +432,16 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     }
   }
 
-  func listenFPPostsForDeletes() {
+  func listenAllFPPostsForDeletes() {
     
     postsRef.observe(.childRemoved, with: { postSnapshot in
-      if let index = self.posts.firstIndex(where: {$0.postID == postSnapshot.key}) {
-        self.posts.remove(at: index)
+      if let index = self.fpPosts.firstIndex(where: {$0.postID == postSnapshot.key}) {
+        
+        self.fpPosts.remove(at: index)
         self.loadingPostCount -= 1
-        Crashlytics.crashlytics().setCustomValue(self.posts.count, forKey: "listenDeletes")
+        
+        Crashlytics.crashlytics().setCustomValue(self.fpPosts.count, forKey: "listenDeletes")
+        
         self.collectionView?.deleteItems(at: [IndexPath(item: index, section: 0)])
       }
     })
@@ -447,19 +451,19 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
   override func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell,
                                forItemAt indexPath: IndexPath) {
     if indexPath.item == (loadingPostCount - 1) {
-      loadFPPostsWithCommentsAndLikes()
+      loadAllFPPostsWithCommentsAndLikes()
     }
   }
 
-  func loadFPPostsWithCommentsAndLikes() {
+  func loadAllFPPostsWithCommentsAndLikes() {
     
-    if observers.isEmpty && !posts.isEmpty {
+    if observers.isEmpty && !fpPosts.isEmpty {
         
       if let spinner = spinner {
         removeSpinner(spinner)
       }
         
-      for post in posts {
+      for post in fpPosts {
         
         postsRef.child(post.postID).observeSingleEvent(of: .value, with: {
             
@@ -470,15 +474,16 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
             
           } else {
             
-            if let index = self.posts.firstIndex(where: {$0.postID == post.postID}) {
-              self.posts.remove(at: index)
+            if let index = self.fpPosts.firstIndex(where: {$0.postID == post.postID}) {
+                
+              self.fpPosts.remove(at: index)
               self.loadingPostCount -= 1
               
-              Crashlytics.crashlytics().setCustomValue(self.posts.count, forKey: "updateDeletes")
+              Crashlytics.crashlytics().setCustomValue(self.fpPosts.count, forKey: "updateDeletes")
                 
               self.collectionView?.deleteItems(at: [IndexPath(item: index, section: 0)])
                 
-              if self.posts.isEmpty {
+              if self.fpPosts.isEmpty {
                     self.collectionView?.backgroundView = self.emptyHomeLabel
               }
                 
@@ -494,7 +499,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
         query = query?.queryEnding(atValue: queryEnding)
       }
         
-      loadingPostCount = posts.count + FPFeedViewController.postsPerLoad
+      loadingPostCount = fpPosts.count + FPFeedViewController.postsPerLoad
       
       query?.queryLimited(toLast: FPFeedViewController.postsLimit).observeSingleEvent(of: .value, with: { snapshot in
         
@@ -505,29 +510,36 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
         if let reversed = snapshot.children.allObjects as? [DataSnapshot], !reversed.isEmpty {
             
           self.collectionView?.backgroundView = nil
+          
           self.nextEntry = reversed[0].key
+        
           var results = [Int: DataSnapshot]()
+            
           let myGroup = DispatchGroup()
+            
           let extraElement = reversed.count > FPFeedViewController.postsPerLoad ? 1 : 0
             
           self.collectionView?.performBatchUpdates({
             
             for index in stride(from: reversed.count - 1, through: extraElement, by: -1) {
-              let item = reversed[index]
                 
-              if self.showFeedAndHideHomeFlag {
-                self.loadSingleFPPostWithPostSnapshot(item)
-              } else {
-                
-                myGroup.enter()
-                
-                let current = reversed.count - 1 - index
-                
-                self.postsRef.child(item.key).observeSingleEvent(of: .value) {
-                    results[current] = $0
-                    myGroup.leave()
-                }
-              }
+                  let item = reversed[index]
+                    
+                  if self.showFeedAndHideHomeFlag {
+                    
+                        self.createSingleFPPostWithPostSnapshot(item)
+                    
+                  } else {
+                    
+                        myGroup.enter()
+                    
+                        let current = reversed.count - 1 - index
+                    
+                        self.postsRef.child(item.key).observeSingleEvent(of: .value) {
+                            results[current] = $0
+                            myGroup.leave()
+                        }
+                  }
             }
             
             myGroup.notify(queue: .main) {
@@ -536,7 +548,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
                     for index in 0..<(reversed.count - extraElement) {
                         if let snapshot = results[index] {
                             if snapshot.exists() {
-                                self.loadSingleFPPostWithPostSnapshot(snapshot)
+                                self.createSingleFPPostWithPostSnapshot(snapshot)
                             } else {
                                 self.loadingPostCount -= 1
                                 self.database.reference(withPath: "feed/\(self.currentUserId)/\(snapshot.key)").removeValue()
@@ -545,9 +557,10 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
                     }
                 }
             }
+            
           }, completion: nil)
             
-        } else if self.posts.isEmpty && !self.showFeedAndHideHomeFlag {
+        } else if self.fpPosts.isEmpty && !self.showFeedAndHideHomeFlag {
           
             if self.isFirstOpenFlag {
                 self.feedAction()
@@ -574,7 +587,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     lastCommentQuery.observe(.childAdded, with: { dataSnaphot in
       if dataSnaphot.key != lastCommentId {
         post.comments.append(FPComment(snapshot: dataSnaphot))
-        if let index = self.posts.firstIndex(where: {$0.postID == post.postID}) {
+        if let index = self.fpPosts.firstIndex(where: {$0.postID == post.postID}) {
           self.collectionView?.reloadItems(at: [IndexPath(item: index, section: 0)])
           self.collectionViewLayout.invalidateLayout()
         }
@@ -583,7 +596,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     commentQuery.observe(.childChanged, with: { dataSnaphot in
       if let index = post.comments.firstIndex(where: {$0.commentID == dataSnaphot.key}) {
         post.comments[index] = .init(snapshot: dataSnaphot)
-        if let index = self.posts.firstIndex(where: {$0.postID == post.postID}) {
+        if let index = self.fpPosts.firstIndex(where: {$0.postID == post.postID}) {
           self.collectionView?.reloadItems(at: [IndexPath(item: index, section: 0)])
           self.collectionViewLayout.invalidateLayout()
         }
@@ -592,7 +605,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     commentQuery.observe(.childRemoved, with: { dataSnaphot in
       if let index = post.comments.firstIndex(where: {$0.commentID == dataSnaphot.key}) {
         post.comments.remove(at: index)
-        if let index = self.posts.firstIndex(where: {$0.postID == post.postID}) {
+        if let index = self.fpPosts.firstIndex(where: {$0.postID == post.postID}) {
           self.collectionView?.reloadItems(at: [IndexPath(item: index, section: 0)])
           self.collectionViewLayout.invalidateLayout()
         }
@@ -608,7 +621,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
       if post.likeCount != count || post.isLiked != $0.hasChild(self.currentUserId){
         post.likeCount = count
         post.isLiked = $0.hasChild(self.currentUserId)
-        if let index = self.posts.firstIndex(where: {$0.postID == post.postID}) {
+        if let index = self.fpPosts.firstIndex(where: {$0.postID == post.postID}) {
           self.collectionView?.reloadItems(at: [IndexPath(item: index, section: 0)])
         }
       }
@@ -617,7 +630,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     self.observers.append(likesQuery)
   }
 
-  func loadSingleFPPostWithPostSnapshot(_ postSnapshot: DataSnapshot) {
+  func createSingleFPPostWithPostSnapshot(_ postSnapshot: DataSnapshot) {
     
     if appDelegate.isBlocked(postSnapshot) {
       loadingPostCount -= 1
@@ -628,69 +641,76 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     
     commentsRef.child(postId).observeSingleEvent(of: .value, with: { commentsSnapshot in
       
-        var commentsArray = [FPComment]()
-      
-        let enumerator = commentsSnapshot.children
-      
-        while let commentSnapshot = enumerator.nextObject() as? DataSnapshot {
-        
-            if !self.appDelegate.isBlocked(commentSnapshot) {
+            var commentsArray = [FPComment]()
           
-                let comment = FPComment(snapshot: commentSnapshot)
+            let enumerator = commentsSnapshot.children
           
-                commentsArray.append(comment)
-        
+            while let commentSnapshot = enumerator.nextObject() as? DataSnapshot {
+            
+                if !self.appDelegate.isBlocked(commentSnapshot) {
+              
+                    let comment = FPComment(snapshot: commentSnapshot)
+              
+                    commentsArray.append(comment)
+            
+                }
+          
             }
-      
-        }
-        
-      
-        self.likesRef.child(postId).observeSingleEvent(of: .value, with: { snapshot in
-            let likes = snapshot.value as? [String: Any]
             
-            let post = FPPost(snapshot: postSnapshot, andComments: commentsArray, andLikes: likes)
-            self.posts.append(post)
-            
-            let last = self.posts.count - 1
-            let lastIndex = [IndexPath(item: last, section: 0)]
-            
-            self.listenSingleFPPostForCommentsAndLikes(post)
-            
-            self.collectionView?.insertItems(at: lastIndex)
-        })
+          
+            self.likesRef.child(postId).observeSingleEvent(of: .value, with: { snapshot in
+                    let likes = snapshot.value as? [String: Any]
+                    
+                    let post = FPPost(snapshot: postSnapshot, andComments: commentsArray, andLikes: likes)
+                    
+                    self.fpPosts.append(post)
+                    
+                    let last = self.fpPosts.count - 1
+                    let lastIndex = [IndexPath(item: last, section: 0)]
+                    
+                    self.listenSingleFPPostForCommentsAndLikes(post)
+                    
+                    self.collectionView?.insertItems(at: lastIndex)
+            })
         
     })
   }
 
   func updateSingleFPPostWithComments(_ post: FPPost, postSnapshot: DataSnapshot) {
-    let postId = postSnapshot.key
-    commentsRef.child(postId).observeSingleEvent(of: .value, with: { commentsSnapshot in
-      var commentsArray = [FPComment]()
-      let enumerator = commentsSnapshot.children
-      while let commentSnapshot = enumerator.nextObject() as? DataSnapshot {
-        let comment = FPComment(snapshot: commentSnapshot)
-        commentsArray.append(comment)
-      }
-      if post.comments != commentsArray {
-        post.comments = commentsArray
-        if let index = self.posts.firstIndex(where: {$0.postID == post.postID}) {
-          self.collectionView?.reloadItems(at: [IndexPath(item: index, section: 0)])
-          self.collectionViewLayout.invalidateLayout()
-        }
-      }
-    })
+        let postId = postSnapshot.key
+    
+        commentsRef.child(postId).observeSingleEvent(of: .value, with: { commentsSnapshot in
+            
+          var commentsArray = [FPComment]()
+          let enumerator = commentsSnapshot.children
+            
+          while let commentSnapshot = enumerator.nextObject() as? DataSnapshot {
+                let comment = FPComment(snapshot: commentSnapshot)
+                commentsArray.append(comment)
+          }
+            
+          if post.comments != commentsArray {
+            
+            post.comments = commentsArray
+                
+            if let index = self.fpPosts.firstIndex(where: {$0.postID == post.postID}) {
+              self.collectionView?.reloadItems(at: [IndexPath(item: index, section: 0)])
+              self.collectionViewLayout.invalidateLayout()
+            }
+          }
+        })
   }
 
   // MARK: UICollectionViewDataSource
   override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-    return posts.count
+    return fpPosts.count
   }
 
   override func collectionView(_ collectionView: UICollectionView,
                                cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
     let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath)
     if let cell = cell as? FPCardCollectionViewCell {
-      let post = posts[indexPath.item]
+      let post = fpPosts[indexPath.item]
       cell.populateContent(post: post, index: indexPath.item, isDryRun: false)
       cell.delegate = self
       cell.cornerRadius = 8
@@ -701,7 +721,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
   }
 
   func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-    let post = posts[indexPath.item]
+    let post = fpPosts[indexPath.item]
     
     sizingCell.populateContent(post: post, index: indexPath.item, isDryRun: true)
 
@@ -878,9 +898,9 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
         self.startHomeFeedLiveUpdaters()
         
         // Get home feed posts
-        self.loadFPPostsWithCommentsAndLikes()
+        self.loadAllFPPostsWithCommentsAndLikes()
         
-        self.listenFPPostsForDeletes()
+        self.listenAllFPPostsForDeletes()
         
         return
       }
@@ -930,9 +950,9 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
         self.startHomeFeedLiveUpdaters()
         
         // Get home feed posts
-        self.loadFPPostsWithCommentsAndLikes()
+        self.loadAllFPPostsWithCommentsAndLikes()
         
-        self.listenFPPostsForDeletes()
+        self.listenAllFPPostsForDeletes()
         
       }
         
