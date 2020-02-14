@@ -22,7 +22,7 @@ class FPCommentViewController: UICollectionViewController, UITextViewDelegate {
   var comments: [FPComment]!
   lazy var appDelegate = UIApplication.shared.delegate as! AppDelegate
   lazy var currentUser = Auth.auth().currentUser!
-  lazy var uid = currentUser.uid
+  lazy var currentUserId = currentUser.uid
 
   lazy var database = Database.database()
   
@@ -303,7 +303,7 @@ class FPCommentViewController: UICollectionViewController, UITextViewDelegate {
     if let indexPath = collectionView?.indexPathForItem(at: buttonPosition), indexPath.section == 1 {
       let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
       let comment = comments[indexPath.item]
-      if comment.from.uid == uid {
+      if comment.from.uid == currentUserId {
         alert.addAction(UIAlertAction(title: "Edit", style: .default , handler:{ _ in
           self.editComment(indexPath)
         }))
@@ -316,7 +316,7 @@ class FPCommentViewController: UICollectionViewController, UITextViewDelegate {
           let alertController = MDCAlertController.init(title: "Report Comment?", message: nil)
           let cancelAction = MDCAlertAction(title: "Cancel", handler: nil)
           let reportAction = MDCAlertAction(title: "Report") { _ in
-            self.database.reference(withPath: "commentFlags/\(self.post.postID)/\(comment.commentID)/\(self.uid)").setValue(true)
+            self.database.reference(withPath: "commentFlags/\(self.post.postID)/\(comment.commentID)/\(self.currentUserId)").setValue(true)
           }
           alertController.addAction(reportAction)
           alertController.addAction(cancelAction)

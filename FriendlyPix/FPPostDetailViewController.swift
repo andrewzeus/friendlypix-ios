@@ -17,20 +17,25 @@
 import Firebase
 
 class FPPostDetailViewController: FPFeedViewController {
+  
   var postSnapshot: DataSnapshot!
 
-  override func loadData() {
+  override func loadDataWithoutResettingEverything() {
+    
     if let post = posts.first {
-      postsRef.child(post.postID).observeSingleEvent(of: .value, with: {
-        if $0.exists() && !self.appDelegate.isBlocked($0) {
-          self.updatePost(post, postSnapshot: $0)
-          self.listenPost(post)
-        } else {
-          self.navigationController?.popViewController(animated: true)
-        }
-      })
+      
+        postsRef.child(post.postID).observeSingleEvent(of: .value, with: {
+            
+            if $0.exists() && !self.appDelegate.isBlocked($0) {
+                self.updateSingleFPPostWithComments(post, postSnapshot: $0)
+                self.listenSingleFPPostForCommentsAndLikes(post)
+            } else {
+                self.navigationController?.popViewController(animated: true)
+            }
+        })
+        
     } else {
-      loadPost(postSnapshot)
+        loadSingleFPPostWithPostSnapshot(postSnapshot)
     }
   }
 
@@ -43,6 +48,7 @@ class FPPostDetailViewController: FPFeedViewController {
   }
 
   override func awakeFromNib() {
+    
   }
 
   override func showProfile(_ profile: FPUser) {

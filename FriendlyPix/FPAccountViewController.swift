@@ -264,7 +264,7 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
   }
 
   func toggleFollow(_ follow: Bool) {
-    feedViewController.followChanged = true
+    feedViewController.followChangedFlag = true
     let myFeed = "feed/\(uid)/"
     database.reference(withPath: "people/\(profile.uid)/posts").observeSingleEvent(of: .value, with: { snapshot in
       var lastPostID: Any = true
