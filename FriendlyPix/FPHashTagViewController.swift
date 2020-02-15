@@ -21,15 +21,16 @@ import MaterialComponents
 class FPHashTagViewController: UICollectionViewController, UICollectionViewDelegateFlowLayout {
     
       var hashtag = ""
+    
       let uid = Auth.auth().currentUser!.uid
       
       let database = Database.database()
       let ref = Database.database().reference()
       
-      var postIds: [String: Any]?
+      var hashtagPostIds: [String: Any]?
       var postSnapshots = [DataSnapshot]()
     
-      var loadingPostCount = 0
+      var loadingPostSnapshotsCount = 0
     
       var firebaseRefs = [DatabaseReference]()
     
@@ -37,13 +38,10 @@ class FPHashTagViewController: UICollectionViewController, UICollectionViewDeleg
 
   
   override func viewDidLoad() {
+        
         super.viewDidLoad()
     
         navigationItem.title = "#\(hashtag)"
-  }
-
-  override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return postSnapshots.count
   }
 
   override func viewDidAppear(_ animated: Bool) {
@@ -63,112 +61,138 @@ class FPHashTagViewController: UICollectionViewController, UICollectionViewDeleg
     firebaseRefs = [DatabaseReference]()
   }
 
-  func registerForPostsDeletion() {
+  func registerForHashtagPostIdsDeletion() {
+    
     let hashtagPostsRef = database.reference(withPath: "hashtags/\(hashtag)")
-    hashtagPostsRef.observe(.childRemoved, with: { hashtagPostSnapshot in
+    
+    hashtagPostsRef.observe(.childRemoved, with: { hashtagPostIdSnapshot in
       
         var index = 0
       
         for post in self.postSnapshots {
-            if post.key == hashtagPostSnapshot.key {
+            
+            if post.key == hashtagPostIdSnapshot.key {
+                
                 self.postSnapshots.remove(at: index)
-                self.loadingPostCount -= 1
+                self.loadingPostSnapshotsCount -= 1
                 self.collectionView?.deleteItems(at: [IndexPath(item: index, section: 0)])
+                
                 return
             }
             
             index += 1
         }
         
-        self.postIds?.removeValue(forKey: hashtagPostSnapshot.key)
+        self.hashtagPostIds?.removeValue(forKey: hashtagPostIdSnapshot.key)
     })
   }
 
 
-  func loadAllHashtagSnapshots() {
+  func loadAllHashtagPostIds() {
+    
     database.reference(withPath: "hashtags/\(hashtag.lowercased())").observeSingleEvent(of: .value, with: {
       
-        if var posts = $0.value as? [String: Any] {
+        if var htagPostIds = $0.value as? [String: Any] {
         
             if !self.postSnapshots.isEmpty {
                 
                 var index = self.postSnapshots.count - 1
                 
                 self.collectionView?.performBatchUpdates({
+                    
                     for post in self.postSnapshots.reversed() {
               
-                        if posts.removeValue(forKey: post.key) == nil {
+                        if htagPostIds.removeValue(forKey: post.key) == nil {
+                            
                             self.postSnapshots.remove(at: index)
+                            
                             self.collectionView?.deleteItems(at: [IndexPath(item: index, section: 0)])
+                            
                             return
                         }
                         
                         index -= 1
                     }
+                    
                 }, completion: nil)
                 
-                self.postIds = posts
+                self.hashtagPostIds = htagPostIds
                 
-                self.loadingPostCount = posts.count
+                self.loadingPostSnapshotsCount = htagPostIds.count
                 
             } else {
           
-                self.postIds = posts
+                self.hashtagPostIds = htagPostIds
           
-                self.loadAllPostSnapshots()
+                self.loadAllPostSnapshotsWithHashtagPostIds()
             }
         
-            self.registerForPostsDeletion()
+            self.registerForHashtagPostIdsDeletion()
         }
     })
   }
 
   func loadData() {
-    loadAllHashtagSnapshots()
+        loadAllHashtagPostIds()
   }
 
   override func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell,
                                forItemAt indexPath: IndexPath) {
-    if indexPath.item == (loadingPostCount - 3) {
-        loadAllPostSnapshots()
+    if indexPath.item == (loadingPostSnapshotsCount - 3) {
+        
+        loadAllPostSnapshotsWithHashtagPostIds()
+    
     }
   }
 
-  func loadAllPostSnapshots() {
+  func loadAllPostSnapshotsWithHashtagPostIds() {
     
-    loadingPostCount = postSnapshots.count + 12
+    loadingPostSnapshotsCount = postSnapshots.count + 12
     
     self.collectionView?.performBatchUpdates({
-      for _ in 1...12 {
-        if let postId = self.postIds?.popFirst()?.key {
-          database.reference(withPath: "posts/\(postId)").observeSingleEvent(of: .value, with: { postSnapshot in
-            self.postSnapshots.append(postSnapshot)
-            self.collectionView?.insertItems(at: [IndexPath(item: self.postSnapshots.count - 1, section: 0)])
-          })
-        } else {
-          break
+      
+        for _ in 1...12 {
+            if let postId = self.hashtagPostIds?.popFirst()?.key {
+              
+                database.reference(withPath: "posts/\(postId)").observeSingleEvent(of: .value, with: { postSnapshot in
+                
+                    self.postSnapshots.append(postSnapshot)
+                
+                    self.collectionView?.insertItems(at: [IndexPath(item: self.postSnapshots.count - 1, section: 0)])
+                })
+                
+            } else {
+              break
+            }
         }
-      }
+        
     }, completion: nil)
+    
+  }
+    
+  override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+           return postSnapshots.count
   }
 
   override func collectionView(_ collectionView: UICollectionView,
                                cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
     
-    let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath)
-    
-    let postSnapshot = postSnapshots[indexPath.item]
-    
-    if let value = postSnapshot.value as? [String: Any], let photoUrl = value["thumb_url"] as? String {
-      let imageView = UIImageView()
-      cell.backgroundView = imageView
-      imageView.sd_setImage(with: URL(string: photoUrl), completed: nil)
-      imageView.contentMode = .scaleAspectFill
-      imageView.isAccessibilityElement = true
-      imageView.accessibilityLabel = "Photo with hashtag \(hashtag)"
-    }
-    
-    return cell
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath)
+        
+        let postSnapshot = postSnapshots[indexPath.item]
+        
+        if let value = postSnapshot.value as? [String: Any], let photoUrl = value["thumb_url"] as? String {
+            
+          let imageView = UIImageView()
+          cell.backgroundView = imageView
+          imageView.sd_setImage(with: URL(string: photoUrl), completed: nil)
+          imageView.contentMode = .scaleAspectFill
+          imageView.isAccessibilityElement = true
+          imageView.accessibilityLabel = "Photo with hashtag \(hashtag)"
+            
+        }
+        
+        return cell
   }
 
   public func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {

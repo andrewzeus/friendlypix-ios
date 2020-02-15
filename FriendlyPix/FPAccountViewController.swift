@@ -19,83 +19,112 @@ import Lightbox
 import MaterialComponents
 
 class FPAccountViewController: UICollectionViewController, UICollectionViewDelegateFlowLayout {
-  var headerView: FPAccountHeader!
-  var profile: FPUser!
-  let uid = Auth.auth().currentUser!.uid
-  let database = Database.database()
-  let ref = Database.database().reference()
-  var postIds: [String: Any]?
-  var postSnapshots = [DataSnapshot]()
-  var loadingPostCount = 0
-  var firebaseRefs = [DatabaseReference]()
-  var insets: UIEdgeInsets!
-  lazy var appDelegate = UIApplication.shared.delegate as! AppDelegate
-
-  override func viewDidLoad() {
-    super.viewDidLoad()
+  
+    var headerView: FPAccountHeader!
     
+    var profile: FPUser!
+    let uid = Auth.auth().currentUser!.uid
+  
+    let database = Database.database()
+    let ref = Database.database().reference()
+  
+    var postIds: [String: Any]?
+    var postSnapshots = [DataSnapshot]()
+  
+    var loadingPostCount = 0
+    
+    var firebaseRefs = [DatabaseReference]()
+    var insets: UIEdgeInsets!
+    
+    lazy var appDelegate = UIApplication.shared.delegate as! AppDelegate
 
-    navigationItem.title = profile.fullname.localizedCapitalized
-  }
-
-  override func viewDidAppear(_ animated: Bool) {
-    super.viewDidAppear(animated)
-    loadData()
-  }
-
-  override func viewWillDisappear(_ animated: Bool) {
-    super.viewWillDisappear(animated)
-    for firebaseRef in firebaseRefs {
-      firebaseRef.removeAllObservers()
-    }
-    firebaseRefs = [DatabaseReference]()
-  }
-
-  @IBAction func valueChanged(_ sender: Any) {
-    if profile.uid == uid {
-      let notificationEnabled = database.reference(withPath: "people/\(uid)/notificationEnabled")
-      if headerView.followSwitch.isOn {
-        notificationEnabled.setValue(true)
-      } else {
-        notificationEnabled.removeValue()
+      override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        navigationItem.title = profile.fullname.localizedCapitalized
       }
-      return
-    }
 
-    toggleFollow(headerView.followSwitch.isOn)
-  }
+      override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        loadData()
+      }
+
+      override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        for firebaseRef in firebaseRefs {
+          firebaseRef.removeAllObservers()
+        }
+        
+        firebaseRefs = [DatabaseReference]()
+      }
+
+      @IBAction func valueChanged(_ sender: Any) {
+        
+        if profile.uid == uid {
+            
+          let notificationEnabled = database.reference(withPath: "people/\(uid)/notificationEnabled")
+          
+            if headerView.followSwitch.isOn {
+                notificationEnabled.setValue(true)
+            } else {
+                notificationEnabled.removeValue()
+            }
+            
+            return
+        }
+
+        toggleFollow(headerView.followSwitch.isOn)
+        
+      }
 
 
   func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+    
     if indexPath.section == 0 {
-      return CGSize(width: collectionView.bounds.size.width, height: 112)
+        return CGSize(width: collectionView.bounds.size.width, height: 112)
     }
+    
     let height = MDCCeil(((collectionView.bounds.width) - 14) * 0.325)
     return CGSize(width: height, height: height)
   }
 
   func registerToFollowStatusUpdate() {
+    
     let followStatusRef = database.reference(withPath: "people/\(uid)/following/\(profile.uid)")
+    
     followStatusRef.observe(.value) {
       self.headerView.followSwitch.isOn = $0.exists()
     }
+    
     firebaseRefs.append(followStatusRef)
+    
   }
 
   func registerToNotificationEnabledStatusUpdate() {
+    
     let notificationEnabledRef  = database.reference(withPath: "people/\(uid)/notificationEnabled")
+    
     notificationEnabledRef.observe(.value) {
       self.headerView.followSwitch.isOn = $0.exists()
     }
+    
     firebaseRefs.append(notificationEnabledRef)
   }
 
   func registerForFollowersCount() {
+    
     let followersRef = database.reference(withPath: "followers/\(profile.uid)")
+    
     followersRef.observe(.value, with: {
-      self.headerView.followersLabel.text = "\($0.childrenCount) follower\($0.childrenCount != 1 ? "s" : "")"
+      
+        self.headerView.followersLabel.text = "\($0.childrenCount) follower\($0.childrenCount != 1 ? "s" : "")"
+        
     })
+    
     firebaseRefs.append(followersRef)
+    
   }
 
   func registerForFollowingCount() {
@@ -107,92 +136,150 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
     })
     
     firebaseRefs.append(followingRef)
+    
   }
 
   func registerForPostsCount() {
+        
     let userPostsRef = database.reference(withPath: "people/\(profile.uid)/posts")
+    
     userPostsRef.observe(.value, with: {
-      self.headerView.postsLabel.text = "\($0.childrenCount) post\($0.childrenCount != 1 ? "s" : "")"
+            self.headerView.postsLabel.text = "\($0.childrenCount) post\($0.childrenCount != 1 ? "s" : "")"
     })
+    
   }
 
   func registerForPostsDeletion() {
+    
     let userPostsRef = database.reference(withPath: "people/\(profile.uid)/posts")
+    
     userPostsRef.observe(.childRemoved, with: { postSnapshot in
-      var index = 0
-      for post in self.postSnapshots {
-        if post.key == postSnapshot.key {
-          self.postSnapshots.remove(at: index)
-          self.loadingPostCount -= 1
-          self.collectionView?.deleteItems(at: [IndexPath(item: index, section: 1)])
-          return
+      
+        var index = 0
+      
+        for post in self.postSnapshots {
+        
+            if post.key == postSnapshot.key {
+          
+                self.postSnapshots.remove(at: index)
+          
+                self.loadingPostCount -= 1
+          
+                self.collectionView?.deleteItems(at: [IndexPath(item: index, section: 1)])
+          
+                return
+        
+            }
+            
+       
+            index += 1
         }
-        index += 1
-      }
-      self.postIds?.removeValue(forKey: postSnapshot.key)
+        
+        self.postIds?.removeValue(forKey: postSnapshot.key)
+        
     })
+    
   }
 
-
-  func loadUserPosts() {
+  func loadUserPostIds() {
+    
     database.reference(withPath: "people/\(profile.uid)/posts").observeSingleEvent(of: .value, with: {
-      if var posts = $0.value as? [String: Any] {
-        if !self.postSnapshots.isEmpty {
-          var index = self.postSnapshots.count - 1
-          self.collectionView?.performBatchUpdates({
-            for post in self.postSnapshots.reversed() {
-              if posts.removeValue(forKey: post.key) == nil {
-                self.postSnapshots.remove(at: index)
-                self.collectionView?.deleteItems(at: [IndexPath(item: index, section: 1)])
-                return
-              }
-              index -= 1
-            }
-          }, completion: nil)
-          self.postIds = posts
-          self.loadingPostCount = posts.count
+      
+        if var posts = $0.value as? [String: Any] {
+        
+            if !self.postSnapshots.isEmpty {
+          
+                var index = self.postSnapshots.count - 1
+          
+                self.collectionView?.performBatchUpdates({
+            
+                    for postSnapshot in self.postSnapshots.reversed() {
+              
+                        if posts.removeValue(forKey: postSnapshot.key) == nil {
+                
+                            self.postSnapshots.remove(at: index)
+                
+                            self.collectionView?.deleteItems(at: [IndexPath(item: index, section: 1)])
+                
+                            return
+              
+                        }
+                        
+              
+                        index -= 1
+            
+                    }
+          
+                }, completion: nil)
+          
+          
+                self.postIds = posts
+          
+                self.loadingPostCount = posts.count
+            
         } else {
-          self.postIds = posts
-          self.loadFeed()
+            
+          
+                self.postIds = posts
+          
+                self.loadPostSnapshots()
+            
         }
+            
         self.registerForPostsDeletion()
       }
     })
   }
 
   func loadData() {
-    if profile.uid == uid {
-      registerToNotificationEnabledStatusUpdate()
-    } else {
-      registerToFollowStatusUpdate()
-    }
-    registerForFollowersCount()
-    registerForFollowingCount()
-    registerForPostsCount()
-    loadUserPosts()
+    
+        if profile.uid == uid {
+            registerToNotificationEnabledStatusUpdate()
+        } else {
+            registerToFollowStatusUpdate()
+        }
+        
+        registerForFollowersCount()
+        
+        registerForFollowingCount()
+        
+        registerForPostsCount()
+        
+        loadUserPostIds()
   }
 
   override func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell,
                                forItemAt indexPath: IndexPath) {
     if indexPath.section == 1 && indexPath.item == (loadingPostCount - 3) {
-      loadFeed()
+        loadPostSnapshots()
     }
   }
 
-  func loadFeed() {
+  func loadPostSnapshots() {
+    
     loadingPostCount = postSnapshots.count + 10
+    
     self.collectionView?.performBatchUpdates({
-      for _ in 1...10 {
-        if let postId = self.postIds?.popFirst()?.key {
-          database.reference(withPath: "posts/\(postId)").observeSingleEvent(of: .value, with: { postSnapshot in
-            self.postSnapshots.append(postSnapshot)
-            self.collectionView?.insertItems(at: [IndexPath(item: self.postSnapshots.count - 1, section: 1)])
-          })
-        } else {
-          break
+      
+        for _ in 1...10 {
+        
+            if let postId = self.postIds?.popFirst()?.key {
+          
+                database.reference(withPath: "posts/\(postId)").observeSingleEvent(of: .value, with: { postSnapshot in
+            
+                    self.postSnapshots.append(postSnapshot)
+            
+                    self.collectionView?.insertItems(at: [IndexPath(item: self.postSnapshots.count - 1, section: 1)])
+          
+                })
+        
+            } else {
+                break
+            }
         }
-      }
+        
     }, completion: nil)
+    
   }
 
   override func numberOfSections(in collectionView: UICollectionView) -> Int {
@@ -374,11 +461,13 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
   }()
 
   override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+    
     if segue.identifier == "detail" {
       if let detailViewController = segue.destination as? FPPostDetailViewController,
         let sender = sender as? DataSnapshot {
         detailViewController.postSnapshot = sender
       }
     }
+    
   }
 }
