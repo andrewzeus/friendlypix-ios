@@ -26,34 +26,44 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
   let mdcMessage = MDCSnackbarMessage()
   let mdcAction = MDCSnackbarMessageAction()
+    
   var window: UIWindow?
-  lazy var database = Database.database()
-  var blockedRef: DatabaseReference!
-  var blockingRef: DatabaseReference!
-  let gcmMessageIDKey = "gcm.message_id"
-  var notificationGranted = false
+  
+    lazy var database = Database.database()
+  
+    var blockedRef: DatabaseReference!
+  
+    var blockingRef: DatabaseReference!
+  
+    let gcmMessageIDKey = "gcm.message_id"
+  
+    var notificationGranted = false
     
   private var blocked = Set<String>()
   private var blocking = Set<String>()
   
-    static var euroZone: Bool = {
-    switch Locale.current.regionCode {
-    case "CH", "AT", "IT", "BE", "LV", "BG", "LT", "HR", "LX", "CY", "MT", "CZ", "NL", "DK",
-         "PL", "EE", "PT", "FI", "RO", "FR", "SK", "DE", "SI", "GR", "ES", "HU", "SE", "IE", "GB":
-      return true
-    default:
-      return false
-    }
+  static var euroZone: Bool = {
+        switch Locale.current.regionCode {
+            case "CH", "AT", "IT", "BE", "LV", "BG", "LT", "HR", "LX", "CY", "MT", "CZ", "NL", "DK",
+                 "PL", "EE", "PT", "FI", "RO", "FR", "SK", "DE", "SI", "GR", "ES", "HU", "SE", "IE", "GB":
+              return true
+            default:
+              return false
+        }
   }()
 
   func application(_ application: UIApplication, didFinishLaunchingWithOptions
     launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+    
     FirebaseApp.configure()
+    
     Messaging.messaging().delegate = self
+    
     if let uid = Auth.auth().currentUser?.uid {
-      blockedRef = database.reference(withPath: "blocked/\(uid)")
-      blockingRef = database.reference(withPath: "blocking/\(uid)")
-      observeBlocks()
+        blockedRef = database.reference(withPath: "blocked/\(uid)")
+        blockingRef = database.reference(withPath: "blocking/\(uid)")
+      
+        observeBlocks()
     }
 
     if #available(iOS 10.0, *) {
@@ -93,27 +103,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   }
 
   func showAlert(_ userInfo: [AnyHashable: Any]) {
-    let apsKey = "aps"
-    let gcmMessage = "alert"
-    let gcmLabel = "google.c.a.c_l"
-    if let aps = userInfo[apsKey] as? [String: String], !aps.isEmpty, let message = aps[gcmMessage],
-      let label = userInfo[gcmLabel] as? String {
-      mdcMessage.text = "\(label): \(message)"
-      MDCSnackbarManager.show(mdcMessage)
-    }
+        let apsKey = "aps"
+        let gcmMessage = "alert"
+        let gcmLabel = "google.c.a.c_l"
+        if let aps = userInfo[apsKey] as? [String: String], !aps.isEmpty, let message = aps[gcmMessage],
+          let label = userInfo[gcmLabel] as? String {
+          mdcMessage.text = "\(label): \(message)"
+          MDCSnackbarManager.show(mdcMessage)
+        }
   }
 
   func showContent(_ content: UNNotificationContent) {
-    mdcMessage.text = content.body
-    mdcAction.title = content.title
-    mdcMessage.duration = 10_000
-    mdcAction.handler = {
-      guard let feed = self.window?.rootViewController?.children[0] as? FPFeedViewController else { return }
-      let userId = content.categoryIdentifier.components(separatedBy: "/user/")[1]
-      feed.showProfile(FPUser(dictionary: ["uid": userId]))
-    }
-    mdcMessage.action = mdcAction
-    MDCSnackbarManager.show(mdcMessage)
+        mdcMessage.text = content.body
+        mdcAction.title = content.title
+        mdcMessage.duration = 10_000
+        mdcAction.handler = {
+          guard let feed = self.window?.rootViewController?.children[0] as? FPFeedViewController else { return }
+          let userId = content.categoryIdentifier.components(separatedBy: "/user/")[1]
+          feed.showProfile(FPUser(dictionary: ["uid": userId]))
+        }
+        mdcMessage.action = mdcAction
+        MDCSnackbarManager.show(mdcMessage)
   }
 
   @available(iOS 9.0, *)
@@ -154,20 +164,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     blockingRef.observe(.childRemoved) { self.blocking.remove($0.key) }
   }
 
-  func isBlocked(_ snapshot: DataSnapshot) -> Bool {
-    let author = snapshot.childSnapshot(forPath: "author/uid").value as! String
-    if blocked.contains(author) || blocking.contains(author) {
-      return true
+  func isBlocked(_ postOrCommentSnapshot: DataSnapshot) -> Bool {
+    let authorUid = postOrCommentSnapshot.childSnapshot(forPath: "author/uid").value as! String
+    
+    if blocked.contains(authorUid) || blocking.contains(authorUid) {
+        return true
     }
+    
     return false
   }
 
-  func isBlocked(by person: String) -> Bool {
-    return blocked.contains(person)
+  func isBlocked(by personId: String) -> Bool {
+    return blocked.contains(personId)
   }
 
-  func isBlocking(_ person: String) -> Bool {
-    return blocking.contains(person)
+  func isBlocking(_ personId: String) -> Bool {
+    return blocking.contains(personId)
   }
 }
 
@@ -203,9 +215,12 @@ extension AppDelegate: FUIAuthDelegate {
   }
 
   func signed(in user: User) {
+    
     blockedRef = database.reference(withPath: "blocked/\(user.uid)")
     blockingRef = database.reference(withPath: "blocking/\(user.uid)")
+    
     observeBlocks()
+    
     let imageUrl = user.isAnonymous ? "" : user.providerData[0].photoURL?.absoluteString
 
     // If the main profile Pic is an expiring facebook profile pic URL we'll update it automatically to use the permanent graph API URL.
@@ -224,14 +239,14 @@ extension AppDelegate: FUIAuthDelegate {
                                  "full_name": displayName]
 
     if !user.isAnonymous, let name = user.providerData[0].displayName, !name.isEmpty {
-      values["_search_index"] = ["full_name": name.lowercased(),
+        values["_search_index"] = ["full_name": name.lowercased(),
                                  "reversed_full_name": name.components(separatedBy: " ")
                                   .reversed().joined(separator: "")]
     }
 
     if notificationGranted {
-      values["notificationEnabled"] = true
-      notificationGranted = false
+        values["notificationEnabled"] = true
+        notificationGranted = false
     }
     database.reference(withPath: "people/\(user.uid)")
       .updateChildValues(values)

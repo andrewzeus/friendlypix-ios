@@ -23,25 +23,25 @@ extension MDCSelfSizingStereoCell {
   static let attributes2 = [NSAttributedString.Key.font: UIFont.mdc_preferredFont(forMaterialTextStyle: .body1)]
 
   func populateContent(from: FPUser, text: String, date: Date, index: Int) {
-    let attrText = NSMutableAttributedString(string: from.fullname , attributes: MDCSelfSizingStereoCell.attributes)
-    attrText.append(NSAttributedString(string: " " + text, attributes: MDCSelfSizingStereoCell.attributes2))
-    attrText.addAttribute(.paragraphStyle, value: MDCSelfSizingStereoCell.paragraphStyle, range: NSMakeRange(0, attrText.length))
-    titleLabel.attributedText = attrText
-    titleLabel.accessibilityLabel = "\(from.fullname) said, \(text)"
-    if let profilePictureURL = from.profilePictureURL {
-      UIImage.circleImage(with: profilePictureURL, to: leadingImageView)
-      leadingImageView.accessibilityLabel = from.fullname
-      leadingImageView.accessibilityHint = "Double-tap to open profile."
-    }
-    leadingImageView.tag = index
-    titleLabel.tag = index
-    detailLabel.text = date.timeAgo()
+        let attrText = NSMutableAttributedString(string: from.fullname , attributes: MDCSelfSizingStereoCell.attributes)
+        attrText.append(NSAttributedString(string: " " + text, attributes: MDCSelfSizingStereoCell.attributes2))
+        attrText.addAttribute(.paragraphStyle, value: MDCSelfSizingStereoCell.paragraphStyle, range: NSMakeRange(0, attrText.length))
+        titleLabel.attributedText = attrText
+        titleLabel.accessibilityLabel = "\(from.fullname) said, \(text)"
+        if let profilePictureURL = from.profilePictureURL {
+          UIImage.circleImage(with: profilePictureURL, to: leadingImageView)
+          leadingImageView.accessibilityLabel = from.fullname
+          leadingImageView.accessibilityHint = "Double-tap to open profile."
+        }
+        leadingImageView.tag = index
+        titleLabel.tag = index
+        detailLabel.text = date.timeAgo()
   }
 
 
   static let paragraphStyle = { () -> NSMutableParagraphStyle in
-    let style = NSMutableParagraphStyle()
-    style.lineSpacing = 2
-    return style
+        let style = NSMutableParagraphStyle()
+        style.lineSpacing = 2
+        return style
   }()
 }

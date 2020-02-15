@@ -111,15 +111,15 @@ class FPSearchViewController: UICollectionViewController, UISearchBarDelegate, U
   }
 
   override func viewWillAppear(_ animated: Bool) {
-    super.viewWillAppear(animated)
-    navigationController?.navigationBar.barTintColor = .white
-    navigationController?.navigationBar.tintColor = .gray
+        super.viewWillAppear(animated)
+        navigationController?.navigationBar.barTintColor = .white
+        navigationController?.navigationBar.tintColor = .gray
   }
 
   override func viewWillDisappear(_ animated: Bool) {
-    super.viewWillDisappear(animated)
-    navigationController?.navigationBar.barTintColor = UIColor.init(hex: "0288D1")
-    navigationController?.navigationBar.tintColor = .white
+        super.viewWillDisappear(animated)
+        navigationController?.navigationBar.barTintColor = UIColor.init(hex: "0288D1")
+        navigationController?.navigationBar.tintColor = .white
   }
 
   func filterContentForSearchText(_ searchText: String, scope: String = "All") {
@@ -167,12 +167,12 @@ class FPSearchViewController: UICollectionViewController, UISearchBarDelegate, U
             
             let enumerator = snapshot.children
               
-            while let person = enumerator.nextObject() as? DataSnapshot {
+            while let personSnapshot = enumerator.nextObject() as? DataSnapshot {
                 
-                if !self.appDelegate.isBlocked(by: person.key), let value = person.value as? [String: Any], let searchIndex = value["_search_index"] as? [String: Any],
+                if !self.appDelegate.isBlocked(by: personSnapshot.key), let value = personSnapshot.value as? [String: Any], let searchIndex = value["_search_index"] as? [String: Any],
                   let fullName = searchIndex[index] as? String, fullName.hasPrefix(searchString) {
                   
-                    self.people.append(FPUser(snapshot: person))
+                    self.people.append(FPUser(snapshot: personSnapshot))
                   
                     self.collectionView?.insertItems(at: [IndexPath(item: self.people.count - 1, section: 0)])
                 
@@ -189,9 +189,9 @@ class FPSearchViewController: UICollectionViewController, UISearchBarDelegate, U
       
         let enumerator = snapshot.children
       
-        while let hashtag = enumerator.nextObject() as? DataSnapshot {
+        while let hashtagSnapshot = enumerator.nextObject() as? DataSnapshot {
         
-            let tag = hashtag.key
+            let tag = hashtagSnapshot.key
         
             if tag.hasPrefix(searchString) {
           
