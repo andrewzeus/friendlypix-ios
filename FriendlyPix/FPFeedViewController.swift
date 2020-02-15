@@ -68,7 +68,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     
   var loadingPostCount = 0
   
-  var nextEntry: String?
+  var nextFPPostEntryId: String?
     
   var sizingCell: FPCardCollectionViewCell!
     
@@ -215,27 +215,13 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
 
   private func reLoadDataAfterResettingEverything() {
     
-    followingRef?.removeAllObservers()
-    postsRef.removeAllObservers()
-    
-    for observer in observers {
-      observer.removeAllObservers()
-    }
-    
-    observers = [DatabaseQuery]()
-    
-    fpPosts = [FPPost]()
-    
-    loadingPostCount = 0
-    
-    nextEntry = nil
-    
-    cleanCollectionView()
+    clearDataAndUIAndObservers()
     
     loadDataWithoutResettingEverything()
   }
 
   override func viewWillLayoutSubviews() {
+    
     let size = bottomBarView.sizeThatFits(view.bounds.size)
     let bottomBarViewFrame = CGRect(x: 0,
                                     y: view.bounds.size.height - size.height,
@@ -243,6 +229,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
                                     height: size.height)
     bottomBarView.frame = bottomBarViewFrame
     MDCSnackbarManager.setBottomOffset(bottomBarView.frame.height)
+    
   }
 
   override func viewDidAppear(_ animated: Bool) {
@@ -258,8 +245,10 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
       self.followingRef = database.reference(withPath: "people/\(currentUserId)/following")
         
     } else {
+        
       self.present(authViewController, animated: true, completion: nil)
       return
+        
     }
     
     MDCSnackbarManager.setBottomOffset(bottomBarView.frame.height)
@@ -302,23 +291,37 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     
     super.viewWillDisappear(animated)
     
-    followingRef?.removeAllObservers()
-    postsRef.removeAllObservers()
-    
-    for observer in observers {
-      observer.removeAllObservers()
-    }
-    
-    observers = [DatabaseQuery]()
-    
-    MDCSnackbarManager.setBottomOffset(0)
-    
-    if let spinner = spinner {
-      removeSpinner(spinner)
-    }
+    clearDataAndUIAndObservers()
   }
+    
+    private func clearDataAndUIAndObservers() {
+        
+        followingRef?.removeAllObservers()
+        postsRef.removeAllObservers()
+        
+        for observer in observers {
+          observer.removeAllObservers()
+        }
+        
+        observers = [DatabaseQuery]()
+        
+        fpPosts = [FPPost]()
+        
+        loadingPostCount = 0
+        
+        nextFPPostEntryId = nil
+        
+        cleanCollectionView()
+        
+        MDCSnackbarManager.setBottomOffset(0)
+        
+        if let spinner = spinner {
+          removeSpinner(spinner)
+        }
+    }
 
   @objc private func homeAction() {
+    
     bottomBarView.subviews[2].subviews[1].subviews[0].tintColor = blue
     bottomBarView.subviews[2].subviews[1].subviews[0].accessibilityTraits = UIAccessibilityTraits.selected
     bottomBarView.subviews[2].subviews[1].subviews[1].tintColor = .gray
@@ -330,6 +333,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
   }
 
   @objc private func feedAction() {
+    
     bottomBarView.subviews[2].subviews[1].subviews[0].tintColor = .gray
     bottomBarView.subviews[2].subviews[1].subviews[0].accessibilityTraits = UIAccessibilityTraits.none
     bottomBarView.subviews[2].subviews[1].subviews[1].tintColor = blue
@@ -495,7 +499,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
         
       var query = self.query?.queryOrderedByKey()
       
-      if let queryEnding = nextEntry {
+      if let queryEnding = nextFPPostEntryId {
         query = query?.queryEnding(atValue: queryEnding)
       }
         
@@ -507,23 +511,23 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
           self.removeSpinner(spinner)
         }
         
-        if let reversed = snapshot.children.allObjects as? [DataSnapshot], !reversed.isEmpty {
+        if let reversedPostsSnapshots = snapshot.children.allObjects as? [DataSnapshot], !reversedPostsSnapshots.isEmpty {
             
           self.collectionView?.backgroundView = nil
           
-          self.nextEntry = reversed[0].key
+          self.nextFPPostEntryId = reversedPostsSnapshots[0].key
         
-          var results = [Int: DataSnapshot]()
+          var resultsIntSnapshotDicts = [Int: DataSnapshot]()
             
           let myGroup = DispatchGroup()
             
-          let extraElement = reversed.count > FPFeedViewController.postsPerLoad ? 1 : 0
+          let extraElement = (reversedPostsSnapshots.count > FPFeedViewController.postsPerLoad) ? 1 : 0
             
           self.collectionView?.performBatchUpdates({
             
-            for index in stride(from: reversed.count - 1, through: extraElement, by: -1) {
+            for index in stride(from: reversedPostsSnapshots.count - 1, through: extraElement, by: -1) {
                 
-                  let item = reversed[index]
+                  let item = reversedPostsSnapshots[index]
                     
                   if self.showFeedAndHideHomeFlag {
                     
@@ -533,10 +537,10 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
                     
                         myGroup.enter()
                     
-                        let current = reversed.count - 1 - index
+                        let current = reversedPostsSnapshots.count - 1 - index
                     
                         self.postsRef.child(item.key).observeSingleEvent(of: .value) {
-                            results[current] = $0
+                            resultsIntSnapshotDicts[current] = $0
                             myGroup.leave()
                         }
                   }
@@ -545,14 +549,17 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
             myGroup.notify(queue: .main) {
               
                 if !self.showFeedAndHideHomeFlag {
-                    for index in 0..<(reversed.count - extraElement) {
-                        if let snapshot = results[index] {
+                    for index in 0..<(reversedPostsSnapshots.count - extraElement) {
+                        
+                        if let snapshot = resultsIntSnapshotDicts[index] {
+                            
                             if snapshot.exists() {
                                 self.createSingleFPPostWithPostSnapshot(snapshot)
                             } else {
                                 self.loadingPostCount -= 1
                                 self.database.reference(withPath: "feed/\(self.currentUserId)/\(snapshot.key)").removeValue()
                             }
+                            
                         }
                     }
                 }
@@ -563,9 +570,12 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
         } else if self.fpPosts.isEmpty && !self.showFeedAndHideHomeFlag {
           
             if self.isFirstOpenFlag {
+                
                 self.feedAction()
                 self.isFirstOpenFlag = false
+                
             } else {
+                
                 self.collectionView?.backgroundView = self.emptyHomeLabel
             }
             

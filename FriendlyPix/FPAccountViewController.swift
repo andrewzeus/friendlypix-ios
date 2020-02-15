@@ -99,10 +99,13 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
   }
 
   func registerForFollowingCount() {
+    
     let followingRef = database.reference(withPath: "people/\(profile.uid)/following")
+    
     followingRef.observe(.value, with: {
       self.headerView.followingLabel.text = "\($0.childrenCount) following"
     })
+    
     firebaseRefs.append(followingRef)
   }
 

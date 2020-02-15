@@ -35,7 +35,7 @@ class FPPostDetailViewController: FPFeedViewController {
         })
         
     } else {
-        loadSingleFPPostWithPostSnapshot(postSnapshot)
+        createSingleFPPostWithPostSnapshot(postSnapshot)
     }
   }
 
@@ -49,7 +49,7 @@ class FPPostDetailViewController: FPFeedViewController {
   }
 
   override func awakeFromNib() {
-    
+    // Skip super class's awakeFromNib
   }
 
   override func showProfile(_ profile: FPUser) {
