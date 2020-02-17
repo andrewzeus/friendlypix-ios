@@ -425,7 +425,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     
     if showAllPostsAndHideHomeFeedFlag {
         
-        query = postsRef
+        //query = postsRef
     
         fetchAllFPPostsWithCommentsAndLikes()
         
@@ -433,7 +433,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
         
     } else {
         
-        query = database.reference(withPath: "feed/\(currentUserId)")
+        //query = database.reference(withPath: "feed/\(currentUserId)")
       
         // Make sure the home feed is updated with followed users's new posts.
         // Only after the feed creation is complete, start fetching the posts.
@@ -501,13 +501,12 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
           }
     } else {
         
-        /*
+        
           if showAllPostsAndHideHomeFeedFlag {
-                   query = postsRef
+                self.query = postsRef
           } else {
-                   query = database.reference(withPath: "feed/\(currentUserId)")
+                self.query = database.reference(withPath: "feed/\(currentUserId)")
           }
-        */
         
           var query = self.query?.queryOrderedByKey()
           
@@ -523,24 +522,24 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
                     self.removeSpinner(spinner)
                 }
                 
-                if let reversedPostsSnapshotsOrFeedPostIdsSnapshots = snapshot.children.allObjects as? [DataSnapshot],
-                    !reversedPostsSnapshotsOrFeedPostIdsSnapshots.isEmpty {
+                if let reversedPostsRefSnapshotsOrFeedRefPostIdsSnapshots = snapshot.children.allObjects as? [DataSnapshot],
+                    !reversedPostsRefSnapshotsOrFeedRefPostIdsSnapshots.isEmpty {
                     
                       self.collectionView?.backgroundView = nil
                       
-                      self.nextFPPostEntryId = reversedPostsSnapshotsOrFeedPostIdsSnapshots[0].key
+                      self.nextFPPostEntryId = reversedPostsRefSnapshotsOrFeedRefPostIdsSnapshots[0].key
                     
-                      var resultsIntFeedPostIdsSnapshotsDicts = [Int: DataSnapshot]()
+                      var resultsIntPostsRefSnapshotsDicts = [Int: DataSnapshot]()
                         
                       let myGroup = DispatchGroup()
                         
-                      let extraElement = (reversedPostsSnapshotsOrFeedPostIdsSnapshots.count > FPFeedViewController.postsPerLoad) ? 1 : 0
+                      let extraElement = (reversedPostsRefSnapshotsOrFeedRefPostIdsSnapshots.count > FPFeedViewController.postsPerLoad) ? 1 : 0
                         
                       self.collectionView?.performBatchUpdates({
                         
-                        for index in stride(from: reversedPostsSnapshotsOrFeedPostIdsSnapshots.count - 1, through: extraElement, by: -1) {
+                        for index in stride(from: reversedPostsRefSnapshotsOrFeedRefPostIdsSnapshots.count - 1, through: extraElement, by: -1) {
                             
-                              let postSnapshotOrFeedPostIdSnapshot = reversedPostsSnapshotsOrFeedPostIdsSnapshots[index]
+                              let postSnapshotOrFeedPostIdSnapshot = reversedPostsRefSnapshotsOrFeedRefPostIdsSnapshots[index]
                                 
                               if self.showAllPostsAndHideHomeFeedFlag {
                                 
@@ -550,10 +549,10 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
                                 
                                     myGroup.enter()
                                 
-                                    let current = reversedPostsSnapshotsOrFeedPostIdsSnapshots.count - 1 - index
+                                    let current = reversedPostsRefSnapshotsOrFeedRefPostIdsSnapshots.count - 1 - index
                                 
                                     self.postsRef.child(postSnapshotOrFeedPostIdSnapshot.key).observeSingleEvent(of: .value) {
-                                            resultsIntFeedPostIdsSnapshotsDicts[current] = $0
+                                            resultsIntPostsRefSnapshotsDicts[current] = $0
                                             myGroup.leave()
                                     }
                               }
@@ -563,14 +562,16 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
                           
                             if !self.showAllPostsAndHideHomeFeedFlag {
                                 
-                                for index in 0..<(reversedPostsSnapshotsOrFeedPostIdsSnapshots.count - extraElement) {
+                                for index in 0..<(reversedPostsRefSnapshotsOrFeedRefPostIdsSnapshots.count - extraElement) {
                                     
-                                    if let feedPostIdSnapshot = resultsIntFeedPostIdsSnapshotsDicts[index] {
+                                    if let feedPostIdSnapshot = resultsIntPostsRefSnapshotsDicts[index] {
                                         
                                         if feedPostIdSnapshot.exists() {
                                             self.createSingleFPPostWithPostSnapshot(feedPostIdSnapshot)
+                                            
                                         } else {
                                             self.loadingPostCount -= 1
+                                            
                                             self.database.reference(withPath: "feed/\(self.currentUserId)/\(feedPostIdSnapshot.key)").removeValue()
                                         }
                                         
@@ -706,14 +707,14 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
             self.likesRef.child(postId).observeSingleEvent(of: .value, with: { snapshot in
                     let likes = snapshot.value as? [String: Any]
                     
-                    let post = FPPost(snapshot: postSnapshot, andComments: commentsArray, andLikes: likes)
+                    let fpPost = FPPost(snapshot: postSnapshot, andComments: commentsArray, andLikes: likes)
                     
-                    self.fpPosts.append(post)
+                    self.fpPosts.append(fpPost)
                     
                     let last = self.fpPosts.count - 1
                     let lastIndex = [IndexPath(item: last, section: 0)]
                     
-                    self.listenSingleFPPostForCommentsAndLikes(post)
+                    self.listenSingleFPPostForCommentsAndLikes(fpPost)
                     
                     self.collectionView?.insertItems(at: lastIndex)
             })
