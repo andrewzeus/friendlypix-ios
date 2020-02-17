@@ -20,7 +20,7 @@ import MaterialComponents
 
 class FPAccountViewController: UICollectionViewController, UICollectionViewDelegateFlowLayout {
   
-    var headerView: FPAccountHeader!
+    var headerView: FPAccountHeaderCell!
     
     var profile: FPUser!
     let uid = Auth.auth().currentUser!.uid
@@ -34,6 +34,7 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
     var loadingPostCount = 0
     
     var firebaseRefs = [DatabaseReference]()
+    
     var insets: UIEdgeInsets!
     
     lazy var appDelegate = UIApplication.shared.delegate as! AppDelegate
@@ -92,60 +93,60 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
 
   func registerToFollowStatusUpdate() {
     
-    let followStatusRef = database.reference(withPath: "people/\(uid)/following/\(profile.uid)")
-    
-    followStatusRef.observe(.value) {
-      self.headerView.followSwitch.isOn = $0.exists()
-    }
-    
-    firebaseRefs.append(followStatusRef)
+        let followStatusRef = database.reference(withPath: "people/\(uid)/following/\(profile.uid)")
+        
+        followStatusRef.observe(.value) {
+          self.headerView.followSwitch.isOn = $0.exists()
+        }
+        
+        firebaseRefs.append(followStatusRef)
     
   }
 
   func registerToNotificationEnabledStatusUpdate() {
     
-    let notificationEnabledRef  = database.reference(withPath: "people/\(uid)/notificationEnabled")
-    
-    notificationEnabledRef.observe(.value) {
-      self.headerView.followSwitch.isOn = $0.exists()
-    }
-    
-    firebaseRefs.append(notificationEnabledRef)
+        let notificationEnabledRef  = database.reference(withPath: "people/\(uid)/notificationEnabled")
+        
+        notificationEnabledRef.observe(.value) {
+          self.headerView.followSwitch.isOn = $0.exists()
+        }
+        
+        firebaseRefs.append(notificationEnabledRef)
   }
 
   func registerForFollowersCount() {
     
-    let followersRef = database.reference(withPath: "followers/\(profile.uid)")
-    
-    followersRef.observe(.value, with: {
-      
-        self.headerView.followersLabel.text = "\($0.childrenCount) follower\($0.childrenCount != 1 ? "s" : "")"
+        let followersRef = database.reference(withPath: "followers/\(profile.uid)")
         
-    })
-    
-    firebaseRefs.append(followersRef)
+        followersRef.observe(.value, with: {
+          
+            self.headerView.followersLabel.text = "\($0.childrenCount) follower\($0.childrenCount != 1 ? "s" : "")"
+            
+        })
+        
+        firebaseRefs.append(followersRef)
     
   }
 
   func registerForFollowingCount() {
     
-    let followingRef = database.reference(withPath: "people/\(profile.uid)/following")
-    
-    followingRef.observe(.value, with: {
-      self.headerView.followingLabel.text = "\($0.childrenCount) following"
-    })
-    
-    firebaseRefs.append(followingRef)
+        let followingRef = database.reference(withPath: "people/\(profile.uid)/following")
+        
+        followingRef.observe(.value, with: {
+          self.headerView.followingLabel.text = "\($0.childrenCount) following"
+        })
+        
+        firebaseRefs.append(followingRef)
     
   }
 
   func registerForPostsCount() {
         
-    let userPostsRef = database.reference(withPath: "people/\(profile.uid)/posts")
-    
-    userPostsRef.observe(.value, with: {
-            self.headerView.postsLabel.text = "\($0.childrenCount) post\($0.childrenCount != 1 ? "s" : "")"
-    })
+        let userPostsRef = database.reference(withPath: "people/\(profile.uid)/posts")
+        
+        userPostsRef.observe(.value, with: {
+                self.headerView.postsLabel.text = "\($0.childrenCount) post\($0.childrenCount != 1 ? "s" : "")"
+        })
     
   }
 
@@ -185,7 +186,7 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
     
     database.reference(withPath: "people/\(profile.uid)/posts").observeSingleEvent(of: .value, with: {
       
-        if var posts = $0.value as? [String: Any] {
+        if var pstIds = $0.value as? [String: Any] {
         
             if !self.postSnapshots.isEmpty {
           
@@ -195,7 +196,7 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
             
                     for postSnapshot in self.postSnapshots.reversed() {
               
-                        if posts.removeValue(forKey: postSnapshot.key) == nil {
+                        if pstIds.removeValue(forKey: postSnapshot.key) == nil {
                 
                             self.postSnapshots.remove(at: index)
                 
@@ -213,14 +214,13 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
                 }, completion: nil)
           
           
-                self.postIds = posts
+                self.postIds = pstIds
           
-                self.loadingPostCount = posts.count
+                self.loadingPostCount = pstIds.count
             
         } else {
-            
-          
-                self.postIds = posts
+
+                self.postIds = pstIds
           
                 self.loadPostSnapshots()
             
@@ -290,37 +290,42 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
     if section == 0 {
       return 1
     }
+    
     return postSnapshots.count
   }
 
   override func collectionView(_ collectionView: UICollectionView,
                                cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
     if indexPath.section == 0 {
-      let header = collectionView.dequeueReusableCell(withReuseIdentifier: "header", for: indexPath) as! FPAccountHeader
-      header.inkColor = .clear
-      headerView = header
-      if profile.uid == uid {
-        header.followLabel.text = "Notifications"
-        header.followSwitch.accessibilityLabel = header.followSwitch.isOn ? "Notifications are on" : "Notifications are off"
-        header.followSwitch.accessibilityHint = "Double-tap to \(header.followSwitch.isOn ? "disable" : "enable") notifications"
-      } else {
-        header.followSwitch.accessibilityHint = "Double-tap to \(header.followSwitch.isOn ? "un" : "")follow"
-        header.followSwitch.accessibilityLabel = "\(header.followSwitch.isOn ? "" : "not ")following \(profile.fullname)"
-      }
-      header.profilePictureImageView.sd_setImage(with: profile.profilePictureURL, completed: nil)
-      return header
+          
+        let header = collectionView.dequeueReusableCell(withReuseIdentifier: "header", for: indexPath) as! FPAccountHeaderCell
+        header.inkColor = .clear
+        headerView = header
+          if profile.uid == uid {
+            header.followLabel.text = "Notifications"
+            header.followSwitch.accessibilityLabel = header.followSwitch.isOn ? "Notifications are on" : "Notifications are off"
+            header.followSwitch.accessibilityHint = "Double-tap to \(header.followSwitch.isOn ? "disable" : "enable") notifications"
+          } else {
+            header.followSwitch.accessibilityHint = "Double-tap to \(header.followSwitch.isOn ? "un" : "")follow"
+            header.followSwitch.accessibilityLabel = "\(header.followSwitch.isOn ? "" : "not ")following \(profile.fullname)"
+          }
+          header.profilePictureImageView.sd_setImage(with: profile.profilePictureURL, completed: nil)
+          
+        return header
     } else {
-      let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath)
-      let postSnapshot = postSnapshots[indexPath.item]
-      if let value = postSnapshot.value as? [String: Any], let photoUrl = value["thumb_url"] as? String {
-        let imageView = UIImageView()
-        cell.backgroundView = imageView
-        imageView.sd_setImage(with: URL(string: photoUrl), completed: nil)
-        imageView.contentMode = .scaleAspectFill
-        imageView.isAccessibilityElement = true
-        imageView.accessibilityLabel = "Photo by \(profile.fullname)"
-      }
-      return cell
+        
+          let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath)
+          let postSnapshot = postSnapshots[indexPath.item]
+          if let value = postSnapshot.value as? [String: Any], let photoUrl = value["thumb_url"] as? String {
+            let imageView = UIImageView()
+            cell.backgroundView = imageView
+            imageView.sd_setImage(with: URL(string: photoUrl), completed: nil)
+            imageView.contentMode = .scaleAspectFill
+            imageView.isAccessibilityElement = true
+            imageView.accessibilityLabel = "Photo by \(profile.fullname)"
+        }
+      
+        return cell
     }
   }
 
@@ -354,29 +359,51 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
   }
 
   func toggleFollow(_ follow: Bool) {
+    
     feedViewController.followChangedFlag = true
+    
     let myFeed = "feed/\(uid)/"
+    
     database.reference(withPath: "people/\(profile.uid)/posts").observeSingleEvent(of: .value, with: { snapshot in
-      var lastPostID: Any = true
-      var updateData = [String: Any]()
-      if let posts = snapshot.value as? [String: Any] {
-        // Add/remove followed user's posts to the home feed.
-        for postId in posts.keys {
-          updateData[myFeed + postId] = follow ? true : NSNull()
-          lastPostID = postId
-        }
+      
+        var lastPostID: Any = true
+      
+        var updateData = [String: Any]()
+      
+        if let posts = snapshot.value as? [String: Any] {
+        
+            // Add/remove followed user's posts to the home feed.
+        
+            for postId in posts.keys {
+          
+                updateData[myFeed + postId] = follow ? true : NSNull()
+          
+                lastPostID = postId
+        
+            }
 
-        // Add/remove followed user to the 'following' list.
-        updateData["people/\(self.uid)/following/\(self.profile.uid)"] = follow ? lastPostID : NSNull()
+        
+            // Add/remove followed user to the 'following' list.
+        
+            updateData["people/\(self.uid)/following/\(self.profile.uid)"] = follow ? lastPostID : NSNull()
 
-        // Add/remove signed-in user to the list of followers.
-        updateData["followers/\(self.profile.uid)/\(self.uid)"] = follow ? true : NSNull()
-        self.ref.updateChildValues(updateData) { error, _ in
-          if let error = error {
-            print(error.localizedDescription)
-          }
+        
+            // Add/remove signed-in user to the list of followers.
+        
+            updateData["followers/\(self.profile.uid)/\(self.uid)"] = follow ? true : NSNull()
+        
+        
+            self.ref.updateChildValues(updateData) { error, _ in
+          
+                if let error = error {
+            
+                    print(error.localizedDescription)
+          
+                }
+        
+            }
+      
         }
-      }
     })
   }
 

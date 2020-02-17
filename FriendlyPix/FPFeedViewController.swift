@@ -44,12 +44,13 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
   lazy var appDelegate = UIApplication.shared.delegate as! AppDelegate
 
   var floatingButtonOffset: CGFloat = 0.0
+  
   var spinner: UIView?
   
   static let postsPerLoad: Int = 3
   static let postsLimit: UInt = 4
   
-  var lightboxCurrentPage: Int?
+  //var lightboxCurrentPage: Int?
 
   let emptyHomeLabel: UILabel = {
     let messageLabel = UILabel()
@@ -74,7 +75,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     
   let bottomBarView = MDCBottomAppBarView()
   
-  var showFeedAndHideHomeFlag = false
+  var showAllPostsAndHideHomeFeedFlag = false
     
   let homeButton = { () -> UIBarButtonItem in
     let button = UIBarButtonItem(image: #imageLiteral(resourceName: "ic_home"), style: .plain, target: self, action: #selector(homeAction))
@@ -180,6 +181,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
   }
 
   override func viewDidLoad() {
+    
     super.viewDidLoad()
     
     let nib = UINib(nibName: "FPCardCollectionViewCell", bundle: nil)
@@ -215,9 +217,9 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
 
   private func reLoadDataAfterResettingEverything() {
     
-    clearDataAndUIAndObservers()
+        clearDataAndUIAndObservers()
     
-    loadDataWithoutResettingEverything()
+        loadDataWithoutResettingEverything()
   }
 
   override func viewWillLayoutSubviews() {
@@ -274,7 +276,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
         return
     }
     
-    if !showFeedAndHideHomeFlag && followChangedFlag {
+    if !showAllPostsAndHideHomeFeedFlag && followChangedFlag {
       
         reLoadDataAfterResettingEverything()
       
@@ -297,6 +299,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     private func clearDataAndUIAndObservers() {
         
         followingRef?.removeAllObservers()
+        
         postsRef.removeAllObservers()
         
         for observer in observers {
@@ -324,10 +327,11 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     
     bottomBarView.subviews[2].subviews[1].subviews[0].tintColor = blue
     bottomBarView.subviews[2].subviews[1].subviews[0].accessibilityTraits = UIAccessibilityTraits.selected
+    
     bottomBarView.subviews[2].subviews[1].subviews[1].tintColor = .gray
     bottomBarView.subviews[2].subviews[1].subviews[1].accessibilityTraits = UIAccessibilityTraits.none
     
-    showFeedAndHideHomeFlag = false
+    showAllPostsAndHideHomeFeedFlag = false
     
     reLoadDataAfterResettingEverything()
   }
@@ -336,10 +340,11 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     
     bottomBarView.subviews[2].subviews[1].subviews[0].tintColor = .gray
     bottomBarView.subviews[2].subviews[1].subviews[0].accessibilityTraits = UIAccessibilityTraits.none
+    
     bottomBarView.subviews[2].subviews[1].subviews[1].tintColor = blue
     bottomBarView.subviews[2].subviews[1].subviews[1].accessibilityTraits = UIAccessibilityTraits.selected
     
-    showFeedAndHideHomeFlag = true
+    showAllPostsAndHideHomeFeedFlag = true
     
     reLoadDataAfterResettingEverything()
   }
@@ -396,8 +401,9 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     let anon = currentUser.isAnonymous
     
     do {
-      try Auth.auth().signOut()
+        try Auth.auth().signOut()
     } catch {
+        
     }
     
     appDelegate.signOut()
@@ -409,7 +415,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     isFirstOpenFlag = true
     
     if anon {
-      present(authViewController, animated: true, completion: nil)
+        present(authViewController, animated: true, completion: nil)
     }
   }
 
@@ -417,13 +423,13 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     
     spinner = displaySpinner()
     
-    if showFeedAndHideHomeFlag {
+    if showAllPostsAndHideHomeFeedFlag {
         
         query = postsRef
     
-        loadAllFPPostsWithCommentsAndLikes()
+        fetchAllFPPostsWithCommentsAndLikes()
         
-        listenAllFPPostsForDeletes()
+        registerForAllFPPostsRefForDeletes()
         
     } else {
         
@@ -431,17 +437,19 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
       
         // Make sure the home feed is updated with followed users's new posts.
         // Only after the feed creation is complete, start fetching the posts.
-        updateHomeDataStream()
+        
+        updateHomeDataStreamWithFollowingRefAndFollowedUserPostsRef()
         
     }
   }
 
-  func listenAllFPPostsForDeletes() {
+  func registerForAllFPPostsRefForDeletes() {
     
     postsRef.observe(.childRemoved, with: { postSnapshot in
       if let index = self.fpPosts.firstIndex(where: {$0.postID == postSnapshot.key}) {
         
         self.fpPosts.remove(at: index)
+        
         self.loadingPostCount -= 1
         
         Crashlytics.crashlytics().setCustomValue(self.fpPosts.count, forKey: "listenDeletes")
@@ -452,157 +460,169 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     
   }
 
-  override func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell,
-                               forItemAt indexPath: IndexPath) {
-    if indexPath.item == (loadingPostCount - 1) {
-      loadAllFPPostsWithCommentsAndLikes()
-    }
-  }
-
-  func loadAllFPPostsWithCommentsAndLikes() {
+  func fetchAllFPPostsWithCommentsAndLikes() {
     
     if observers.isEmpty && !fpPosts.isEmpty {
         
-      if let spinner = spinner {
-        removeSpinner(spinner)
-      }
-        
-      for post in fpPosts {
-        
-        postsRef.child(post.postID).observeSingleEvent(of: .value, with: {
-            
-          if $0.exists() && !self.appDelegate.isBlocked($0) {
-            
-            self.updateSingleFPPostWithComments(post, postSnapshot: $0)
-            self.listenSingleFPPostForCommentsAndLikes(post)
-            
-          } else {
-            
-            if let index = self.fpPosts.firstIndex(where: {$0.postID == post.postID}) {
-                
-              self.fpPosts.remove(at: index)
-              self.loadingPostCount -= 1
-              
-              Crashlytics.crashlytics().setCustomValue(self.fpPosts.count, forKey: "updateDeletes")
-                
-              self.collectionView?.deleteItems(at: [IndexPath(item: index, section: 0)])
-                
-              if self.fpPosts.isEmpty {
-                    self.collectionView?.backgroundView = self.emptyHomeLabel
-              }
-                
-            }
+          if let spinner = spinner {
+            removeSpinner(spinner)
           }
-        })
-      }
+            
+          for fpPost in fpPosts {
+            
+            //postsRef.child(fpPost.postID).observeSingleEvent(of: .value, with: {
+                
+              //if $0.exists() && !self.appDelegate.isBlocked($0) {
+              if !self.appDelegate.isBlocked(post: fpPost) {
+             
+                self.updateSingleFPPostWithComments(fpPost/*, postSnapshot: $0*/)
+                
+                self.listenSingleFPPostForCommentsAndLikes(fpPost)
+                
+              } else {
+                
+                if let index = self.fpPosts.firstIndex(where: {$0.postID == fpPost.postID}) {
+                    
+                  self.fpPosts.remove(at: index)
+                  self.loadingPostCount -= 1
+                  
+                  Crashlytics.crashlytics().setCustomValue(self.fpPosts.count, forKey: "updateDeletes")
+                    
+                  self.collectionView?.deleteItems(at: [IndexPath(item: index, section: 0)])
+                    
+                  if self.fpPosts.isEmpty {
+                        self.collectionView?.backgroundView = self.emptyHomeLabel
+                  }
+                    
+                }
+              }
+            
+            //})
+          }
     } else {
         
-      var query = self.query?.queryOrderedByKey()
-      
-      if let queryEnding = nextFPPostEntryId {
-        query = query?.queryEnding(atValue: queryEnding)
-      }
+        /*
+          if showAllPostsAndHideHomeFeedFlag {
+                   query = postsRef
+          } else {
+                   query = database.reference(withPath: "feed/\(currentUserId)")
+          }
+        */
         
-      loadingPostCount = fpPosts.count + FPFeedViewController.postsPerLoad
-      
-      query?.queryLimited(toLast: FPFeedViewController.postsLimit).observeSingleEvent(of: .value, with: { snapshot in
-        
-        if let spinner = self.spinner {
-          self.removeSpinner(spinner)
-        }
-        
-        if let reversedPostsSnapshots = snapshot.children.allObjects as? [DataSnapshot], !reversedPostsSnapshots.isEmpty {
-            
-          self.collectionView?.backgroundView = nil
+          var query = self.query?.queryOrderedByKey()
           
-          self.nextFPPostEntryId = reversedPostsSnapshots[0].key
-        
-          var resultsIntSnapshotDicts = [Int: DataSnapshot]()
+          if let queryEnding = nextFPPostEntryId {
+            query = query?.queryEnding(atValue: queryEnding)
+          }
             
-          let myGroup = DispatchGroup()
+          loadingPostCount = fpPosts.count + FPFeedViewController.postsPerLoad
+          
+          query?.queryLimited(toLast: FPFeedViewController.postsLimit).observeSingleEvent(of: .value, with: { snapshot in
             
-          let extraElement = (reversedPostsSnapshots.count > FPFeedViewController.postsPerLoad) ? 1 : 0
-            
-          self.collectionView?.performBatchUpdates({
-            
-            for index in stride(from: reversedPostsSnapshots.count - 1, through: extraElement, by: -1) {
-                
-                  let item = reversedPostsSnapshots[index]
-                    
-                  if self.showFeedAndHideHomeFlag {
-                    
-                        self.createSingleFPPostWithPostSnapshot(item)
-                    
-                  } else {
-                    
-                        myGroup.enter()
-                    
-                        let current = reversedPostsSnapshots.count - 1 - index
-                    
-                        self.postsRef.child(item.key).observeSingleEvent(of: .value) {
-                            resultsIntSnapshotDicts[current] = $0
-                            myGroup.leave()
-                        }
-                  }
-            }
-            
-            myGroup.notify(queue: .main) {
-              
-                if !self.showFeedAndHideHomeFlag {
-                    for index in 0..<(reversedPostsSnapshots.count - extraElement) {
-                        
-                        if let snapshot = resultsIntSnapshotDicts[index] {
-                            
-                            if snapshot.exists() {
-                                self.createSingleFPPostWithPostSnapshot(snapshot)
-                            } else {
-                                self.loadingPostCount -= 1
-                                self.database.reference(withPath: "feed/\(self.currentUserId)/\(snapshot.key)").removeValue()
-                            }
-                            
-                        }
-                    }
+                if let spinner = self.spinner {
+                    self.removeSpinner(spinner)
                 }
-            }
-            
-          }, completion: nil)
-            
-        } else if self.fpPosts.isEmpty && !self.showFeedAndHideHomeFlag {
-          
-            if self.isFirstOpenFlag {
                 
-                self.feedAction()
-                self.isFirstOpenFlag = false
-                
-            } else {
-                
-                self.collectionView?.backgroundView = self.emptyHomeLabel
-            }
+                if let reversedPostsSnapshotsOrFeedPostIdsSnapshots = snapshot.children.allObjects as? [DataSnapshot],
+                    !reversedPostsSnapshotsOrFeedPostIdsSnapshots.isEmpty {
+                    
+                      self.collectionView?.backgroundView = nil
+                      
+                      self.nextFPPostEntryId = reversedPostsSnapshotsOrFeedPostIdsSnapshots[0].key
+                    
+                      var resultsIntFeedPostIdsSnapshotsDicts = [Int: DataSnapshot]()
+                        
+                      let myGroup = DispatchGroup()
+                        
+                      let extraElement = (reversedPostsSnapshotsOrFeedPostIdsSnapshots.count > FPFeedViewController.postsPerLoad) ? 1 : 0
+                        
+                      self.collectionView?.performBatchUpdates({
+                        
+                        for index in stride(from: reversedPostsSnapshotsOrFeedPostIdsSnapshots.count - 1, through: extraElement, by: -1) {
+                            
+                              let postSnapshotOrFeedPostIdSnapshot = reversedPostsSnapshotsOrFeedPostIdsSnapshots[index]
+                                
+                              if self.showAllPostsAndHideHomeFeedFlag {
+                                
+                                    self.createSingleFPPostWithPostSnapshot(postSnapshotOrFeedPostIdSnapshot)
+                                
+                              } else {
+                                
+                                    myGroup.enter()
+                                
+                                    let current = reversedPostsSnapshotsOrFeedPostIdsSnapshots.count - 1 - index
+                                
+                                    self.postsRef.child(postSnapshotOrFeedPostIdSnapshot.key).observeSingleEvent(of: .value) {
+                                            resultsIntFeedPostIdsSnapshotsDicts[current] = $0
+                                            myGroup.leave()
+                                    }
+                              }
+                        }
+                        
+                        myGroup.notify(queue: .main) {
+                          
+                            if !self.showAllPostsAndHideHomeFeedFlag {
+                                
+                                for index in 0..<(reversedPostsSnapshotsOrFeedPostIdsSnapshots.count - extraElement) {
+                                    
+                                    if let feedPostIdSnapshot = resultsIntFeedPostIdsSnapshotsDicts[index] {
+                                        
+                                        if feedPostIdSnapshot.exists() {
+                                            self.createSingleFPPostWithPostSnapshot(feedPostIdSnapshot)
+                                        } else {
+                                            self.loadingPostCount -= 1
+                                            self.database.reference(withPath: "feed/\(self.currentUserId)/\(feedPostIdSnapshot.key)").removeValue()
+                                        }
+                                        
+                                    }
+                                }
+                            }
+                        }
+                        
+                      }, completion: nil)
+                    
+                } else if self.fpPosts.isEmpty && !self.showAllPostsAndHideHomeFeedFlag {
+                  
+                    if self.isFirstOpenFlag {
+                        
+                        self.feedAction()
+                        self.isFirstOpenFlag = false
+                        
+                    } else {
+                        
+                        self.collectionView?.backgroundView = self.emptyHomeLabel
+                    }
+                    
+                }
             
-        }
-      })
+          })
     }
   }
 
   func listenSingleFPPostForCommentsAndLikes(_ post: FPPost) {
     
     let commentQuery: DatabaseQuery = self.commentsRef.child(post.postID)
+    
     var lastCommentQuery = commentQuery
+    
     let lastCommentId = post.comments.last?.commentID
     
     if let lastCommentId = lastCommentId {
-      lastCommentQuery = commentQuery.queryOrderedByKey().queryStarting(atValue: lastCommentId)
+        lastCommentQuery = commentQuery.queryOrderedByKey().queryStarting(atValue: lastCommentId)
     }
     
     lastCommentQuery.observe(.childAdded, with: { dataSnaphot in
       if dataSnaphot.key != lastCommentId {
+        
         post.comments.append(FPComment(snapshot: dataSnaphot))
+        
         if let index = self.fpPosts.firstIndex(where: {$0.postID == post.postID}) {
           self.collectionView?.reloadItems(at: [IndexPath(item: index, section: 0)])
           self.collectionViewLayout.invalidateLayout()
         }
       }
     })
+    
     commentQuery.observe(.childChanged, with: { dataSnaphot in
       if let index = post.comments.firstIndex(where: {$0.commentID == dataSnaphot.key}) {
         post.comments[index] = .init(snapshot: dataSnaphot)
@@ -612,9 +632,12 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
         }
       }
     })
+    
     commentQuery.observe(.childRemoved, with: { dataSnaphot in
       if let index = post.comments.firstIndex(where: {$0.commentID == dataSnaphot.key}) {
+        
         post.comments.remove(at: index)
+        
         if let index = self.fpPosts.firstIndex(where: {$0.postID == post.postID}) {
           self.collectionView?.reloadItems(at: [IndexPath(item: index, section: 0)])
           self.collectionViewLayout.invalidateLayout()
@@ -623,18 +646,30 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     })
     
     self.observers.append(commentQuery)
+    
     self.observers.append(lastCommentQuery)
+    
+    
+    /////////////////
     
     let likesQuery = self.likesRef.child(post.postID)
     likesQuery.observe(.value, with: {
-      let count = Int($0.childrenCount)
-      if post.likeCount != count || post.isLiked != $0.hasChild(self.currentUserId){
-        post.likeCount = count
-        post.isLiked = $0.hasChild(self.currentUserId)
-        if let index = self.fpPosts.firstIndex(where: {$0.postID == post.postID}) {
-          self.collectionView?.reloadItems(at: [IndexPath(item: index, section: 0)])
+      
+        let count = Int($0.childrenCount)
+      
+        if post.likeCount != count || post.isLiked != $0.hasChild(self.currentUserId){
+        
+            post.likeCount = count
+        
+            post.isLiked = $0.hasChild(self.currentUserId)
+        
+            if let index = self.fpPosts.firstIndex(where: {$0.postID == post.postID}) {
+          
+                self.collectionView?.reloadItems(at: [IndexPath(item: index, section: 0)])
+        
+            }
+      
         }
-      }
     })
     
     self.observers.append(likesQuery)
@@ -686,12 +721,15 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     })
   }
 
-  func updateSingleFPPostWithComments(_ post: FPPost, postSnapshot: DataSnapshot) {
-        let postId = postSnapshot.key
+  func updateSingleFPPostWithComments(_ fpPost: FPPost/*, postSnapshot: DataSnapshot*/) {
+        
+        //let postId = postSnapshot.key
+        let postId = fpPost.postID
     
         commentsRef.child(postId).observeSingleEvent(of: .value, with: { commentsSnapshot in
             
           var commentsArray = [FPComment]()
+          
           let enumerator = commentsSnapshot.children
             
           while let commentSnapshot = enumerator.nextObject() as? DataSnapshot {
@@ -699,11 +737,11 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
                 commentsArray.append(comment)
           }
             
-          if post.comments != commentsArray {
+          if fpPost.comments != commentsArray {
             
-            post.comments = commentsArray
+            fpPost.comments = commentsArray
                 
-            if let index = self.fpPosts.firstIndex(where: {$0.postID == post.postID}) {
+            if let index = self.fpPosts.firstIndex(where: {$0.postID == fpPost.postID}) {
               self.collectionView?.reloadItems(at: [IndexPath(item: index, section: 0)])
               self.collectionViewLayout.invalidateLayout()
             }
@@ -712,6 +750,15 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
   }
 
   // MARK: UICollectionViewDataSource
+    
+    override func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell,
+                                  forItemAt indexPath: IndexPath) {
+       if indexPath.item == (loadingPostCount - 1) {
+         fetchAllFPPostsWithCommentsAndLikes()
+       }
+     }
+    
+    
   override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
     return fpPosts.count
   }
@@ -719,14 +766,22 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
   override func collectionView(_ collectionView: UICollectionView,
                                cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
     let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath)
+    
     if let cell = cell as? FPCardCollectionViewCell {
-      let post = fpPosts[indexPath.item]
-      cell.populateContent(post: post, index: indexPath.item, isDryRun: false)
-      cell.delegate = self
-      cell.cornerRadius = 8
-      cell.setShadowElevation(ShadowElevation(rawValue: 6), for: .selected)
-      cell.setShadowColor(UIColor.black, for: .highlighted)
+      
+        let fpPost = fpPosts[indexPath.item]
+      
+        cell.populateContent(post: fpPost, index: indexPath.item, isDryRun: false)
+      
+        cell.delegate = self
+      
+        cell.cornerRadius = 8
+      
+        cell.setShadowElevation(ShadowElevation(rawValue: 6), for: .selected)
+      
+        cell.setShadowColor(UIColor.black, for: .highlighted)
     }
+    
     return cell
   }
 
@@ -759,16 +814,17 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
   }
 
   func toogleLike(_ post: FPPost, label: UILabel) {
-    let postLike = database.reference(withPath: "likes/\(post.postID)/\(currentUserId)")
+    let postLikeRef = database.reference(withPath: "likes/\(post.postID)/\(currentUserId)")
+    
     if post.isLiked {
-      postLike.removeValue { error, _ in
+      postLikeRef.removeValue { error, _ in
         if let error = error {
           print(error.localizedDescription)
           return
         }
       }
     } else {
-      postLike.setValue(ServerValue.timestamp()) { error, _ in
+      postLikeRef.setValue(ServerValue.timestamp()) { error, _ in
         if let error = error {
           print(error.localizedDescription)
           return
@@ -857,7 +913,9 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
   /**
    * Keeps the home feed populated with latest followed users' posts live.
    */
-  func startHomeFeedLiveUpdaters() {
+  func registerForFollowedUserPostsRefUpdateWithFollowingRef() {
+    
+    //self.followingRef = database.reference(withPath: "people/\(currentUserId)/following")
     
     // Make sure we listen on each followed people's posts.
     followingRef?.observe(.childAdded, with: { followingSnapshot in
@@ -887,7 +945,7 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
     // Stop listening to users we unfollow.
     followingRef?.observe(.childRemoved, with: { snapshot in
         
-        // Stop listening the followed user's posts to populate the home feed
+        // Stop listening to the un-followed user's posts to populate the home feed
         let followedUserId: String = snapshot.key
         self.database.reference(withPath: "people/\(followedUserId)/posts").removeAllObservers()
         
@@ -898,73 +956,76 @@ class FPFeedViewController: UICollectionViewController, UICollectionViewDelegate
   /**
    * Updates the home feed with new followed users' posts and returns a promise once that's done.
    */
-  func updateHomeDataStream() {
+  func updateHomeDataStreamWithFollowingRefAndFollowedUserPostsRef() {
     
     // Make sure we listen on each followed people's posts.
     followingRef?.observeSingleEvent(of: .value, with: { followingSnapshot in
-      // Start listening the followed user's posts to populate the home feed.
-      guard let following = followingSnapshot.value as? [String: Any] else {
+      
+        // Start listening the followed user's posts to populate the home feed.
+        guard let following = followingSnapshot.value as? [String: Any] else {
         
-        self.startHomeFeedLiveUpdaters()
+            self.registerForFollowedUserPostsRefUpdateWithFollowingRef()
         
-        // Get home feed posts
-        self.loadAllFPPostsWithCommentsAndLikes()
+            // Get home feed posts
+            self.fetchAllFPPostsWithCommentsAndLikes()
         
-        self.listenAllFPPostsForDeletes()
+            self.registerForAllFPPostsRefForDeletes()
         
-        return
-      }
-        
-      var followedUserPostsRef: DatabaseQuery!
-      let myGroup = DispatchGroup()
-        
-      for (followedUid, lastSyncedPostId) in following {
-        
-        myGroup.enter()
-        
-        followedUserPostsRef = self.database.reference(withPath: "people/\(followedUid)/posts")
-        
-        var lastSyncedPost = ""
-        
-        if let lastSyncedPostId = lastSyncedPostId as? String {
-            followedUserPostsRef = followedUserPostsRef.queryOrderedByKey().queryStarting(atValue: lastSyncedPostId)
-            lastSyncedPost = lastSyncedPostId
+            return
         }
         
-        followedUserPostsRef.observeSingleEvent(of: .value, with: { postSnapshot in
+          var followedUserPostsRef: DatabaseQuery!
+          
+          let myGroup = DispatchGroup()
             
-            if let postArray = postSnapshot.value as? [String: Any] {
-                var updates = [AnyHashable: Any]()
+          for (followedUid, lastSyncedPostId) in following {
             
-                for postId in postArray.keys where postId != lastSyncedPost {
-              
-                    updates["/feed/\(self.currentUserId)/\(postId)"] = true
-              
-                    updates["/people/\(self.currentUserId)/following/\(followedUid)"] = postId
-                }
-            
-                self.ref.updateChildValues(updates, withCompletionBlock: { error, reference in
-              
-                    myGroup.leave()
-                })
+                myGroup.enter()
                 
-            } else {
-                myGroup.leave()
-            }
-        })
-      }
-        
-      myGroup.notify(queue: .main) {
-        
-        // Add new posts from followers live.
-        self.startHomeFeedLiveUpdaters()
-        
-        // Get home feed posts
-        self.loadAllFPPostsWithCommentsAndLikes()
-        
-        self.listenAllFPPostsForDeletes()
-        
-      }
+                followedUserPostsRef = self.database.reference(withPath: "people/\(followedUid)/posts")
+                
+                var lastSyncedPost = ""
+                
+                if let lastSyncedPostId = lastSyncedPostId as? String {
+                    followedUserPostsRef = followedUserPostsRef.queryOrderedByKey().queryStarting(atValue: lastSyncedPostId)
+                    lastSyncedPost = lastSyncedPostId
+                }
+                
+                followedUserPostsRef.observeSingleEvent(of: .value, with: { postIdSnapshot in
+                    
+                    if let postIdArray = postIdSnapshot.value as? [String: Any] {
+                        
+                        var updates = [AnyHashable: Any]()
+                    
+                        for postId in postIdArray.keys where postId != lastSyncedPost {
+                      
+                            updates["/feed/\(self.currentUserId)/\(postId)"] = true
+                      
+                            updates["/people/\(self.currentUserId)/following/\(followedUid)"] = postId
+                        }
+                    
+                        self.ref.updateChildValues(updates, withCompletionBlock: { error, reference in
+                      
+                            myGroup.leave()
+                        })
+                        
+                    } else {
+                        myGroup.leave()
+                    }
+                })
+          }
+            
+          myGroup.notify(queue: .main) {
+            
+                // Add new posts from followers live.
+                self.registerForFollowedUserPostsRefUpdateWithFollowingRef()
+            
+                // Get home feed posts
+                self.fetchAllFPPostsWithCommentsAndLikes()
+            
+                self.registerForAllFPPostsRefForDeletes()
+            
+          }
         
     })
   }

@@ -20,11 +20,14 @@ import MaterialComponents
 
 class FPUploadViewController: UIViewController, UITextViewDelegate {
   @IBOutlet weak private var imageView: UIImageView!
+    
   private var bottomConstraint: NSLayoutConstraint!
   private var heightConstraint: NSLayoutConstraint!
   private var inputBottomConstraint: NSLayoutConstraint!
   private var sendBottomConstraint: NSLayoutConstraint!
+    
   private var isKeyboardShown = false
+  
   private let messageInputContainerView: UIView = {
     let view = UIView()
     view.backgroundColor = .white
@@ -60,7 +63,9 @@ class FPUploadViewController: UIViewController, UITextViewDelegate {
 
   var image: UIImage!
   var vision: Vision!
+    
   @IBOutlet weak private var button: MDCButton!
+  
   lazy var database = Database.database()
   lazy var storage = Storage.storage()
   
@@ -72,6 +77,7 @@ class FPUploadViewController: UIViewController, UITextViewDelegate {
   override func viewDidLoad() {
     super.viewDidLoad()
     imageView.image = image
+    
     detectLabelsInImage()
 
     if #available(iOS 11.0, *) {
@@ -249,7 +255,9 @@ class FPUploadViewController: UIViewController, UITextViewDelegate {
     metadata.contentType = "image/jpeg"
 
     let message = MDCSnackbarMessage()
+    
     let myGroup = DispatchGroup()
+    
     myGroup.enter()
     fullRef.putData(resizedImageData, metadata: metadata) { fullmetadata, error in
       if let error = error {
@@ -271,6 +279,7 @@ class FPUploadViewController: UIViewController, UITextViewDelegate {
         myGroup.leave()
       })
     }
+    
     myGroup.enter()
     thumbRef.putData(thumbnailImageData, metadata: metadata) { thumbmetadata, error in
       if let error = error {
@@ -291,19 +300,31 @@ class FPUploadViewController: UIViewController, UITextViewDelegate {
         myGroup.leave()
       })
     }
+    
     myGroup.notify(queue: .main) {
       if let spinner = self.spinner {
         self.removeSpinner(spinner)        
       }
 
       let trimmedComment = self.inputTextView.text?.trimmingCharacters(in: CharacterSet.whitespaces)
-      let data = ["full_url": self.fullURL, "full_storage_uri": fullRef.fullPath,
-                  "thumb_url": self.thumbURL, "thumb_storage_uri": thumbRef.fullPath,
-                  "text": trimmedComment ?? "", "client": "ios",
-                  "author": FPUser.currentUser().author(), "timestamp": ServerValue.timestamp()] as [String: Any]
-      postRef.setValue(data)
-      postRef.root.updateChildValues(["people/\(self.uid)/posts/\(postId)": true, "feed/\(self.uid)/\(postId)": true])
-      self.navigationController?.popViewController(animated: true)
+      
+      let data = [
+        "full_url": self.fullURL,
+        "full_storage_uri": fullRef.fullPath,
+        "thumb_url": self.thumbURL,
+        "thumb_storage_uri": thumbRef.fullPath,
+        "text": trimmedComment ?? "",
+        "client": "ios",
+        "author": FPUser.currentUser().authorDict(),
+        "timestamp": ServerValue.timestamp()
+        ] as [String: Any]
+        
+      
+        postRef.setValue(data)
+      
+        postRef.root.updateChildValues(["people/\(self.uid)/posts/\(postId)": true, "feed/\(self.uid)/\(postId)": true])
+      
+        self.navigationController?.popViewController(animated: true)
     }
   }
 }

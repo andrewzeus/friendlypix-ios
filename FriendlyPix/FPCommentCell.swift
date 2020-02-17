@@ -28,6 +28,7 @@ extension MDCSelfSizingStereoCell {
         attrText.addAttribute(.paragraphStyle, value: MDCSelfSizingStereoCell.paragraphStyle, range: NSMakeRange(0, attrText.length))
         titleLabel.attributedText = attrText
         titleLabel.accessibilityLabel = "\(from.fullname) said, \(text)"
+        
         if let profilePictureURL = from.profilePictureURL {
           UIImage.circleImage(with: profilePictureURL, to: leadingImageView)
           leadingImageView.accessibilityLabel = from.fullname
@@ -35,6 +36,7 @@ extension MDCSelfSizingStereoCell {
         }
         leadingImageView.tag = index
         titleLabel.tag = index
+    
         detailLabel.text = date.timeAgo()
   }
 

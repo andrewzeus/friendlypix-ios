@@ -14,7 +14,7 @@
 		105756431F7EF5D400DF3352 /* UIImage+Circle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 105756421F7EF5D400DF3352 /* UIImage+Circle.swift */; };
 		105D19421F8422D0008C282C /* FPAccountViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 105D19411F8422D0008C282C /* FPAccountViewController.swift */; };
 		106820591FAA9E950065C393 /* FPSearchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 106820581FAA9E950065C393 /* FPSearchViewController.swift */; };
-		10721AB11FA28A0800C2911A /* FPAccountHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10721AB01FA28A0800C2911A /* FPAccountHeader.swift */; };
+		10721AB11FA28A0800C2911A /* FPAccountHeaderCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10721AB01FA28A0800C2911A /* FPAccountHeaderCell.swift */; };
 		10757BCC20587C87007623FD /* Launch.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 10757BCB20587C87007623FD /* Launch.storyboard */; };
 		1082A0391FB0F8D2000C594F /* FPUploadViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1082A0381FB0F8D2000C594F /* FPUploadViewController.swift */; };
 		10894A831F86C41C00F30A2C /* Amaranth-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 10894A821F86C41C00F30A2C /* Amaranth-Bold.otf */; };
@@ -61,7 +61,7 @@
 		105756421F7EF5D400DF3352 /* UIImage+Circle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+Circle.swift"; sourceTree = "<group>"; };
 		105D19411F8422D0008C282C /* FPAccountViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FPAccountViewController.swift; sourceTree = "<group>"; };
 		106820581FAA9E950065C393 /* FPSearchViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FPSearchViewController.swift; sourceTree = "<group>"; };
-		10721AB01FA28A0800C2911A /* FPAccountHeader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FPAccountHeader.swift; sourceTree = "<group>"; };
+		10721AB01FA28A0800C2911A /* FPAccountHeaderCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FPAccountHeaderCell.swift; sourceTree = "<group>"; };
 		10757BCB20587C87007623FD /* Launch.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Launch.storyboard; sourceTree = "<group>"; };
 		1082A0381FB0F8D2000C594F /* FPUploadViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FPUploadViewController.swift; sourceTree = "<group>"; };
 		10894A821F86C41C00F30A2C /* Amaranth-Bold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Amaranth-Bold.otf"; sourceTree = "<group>"; };
@@ -160,7 +160,7 @@
 				10894A821F86C41C00F30A2C /* Amaranth-Bold.otf */,
 				10FD8FDF1F7E840800BCB991 /* Assets.xcassets */,
 				10E1DB2B1F84106F001CDB18 /* FPAuthPickerViewController.xib */,
-				10721AB01FA28A0800C2911A /* FPAccountHeader.swift */,
+				10721AB01FA28A0800C2911A /* FPAccountHeaderCell.swift */,
 				109EBC5E1FAA848B005F2162 /* FPCommentCell.swift */,
 				106820581FAA9E950065C393 /* FPSearchViewController.swift */,
 				10FEA3D31FAB927200BAD9FD /* FPPostDetailViewController.swift */,
@@ -486,7 +486,7 @@
 				10D4F0062159842D00269B0C /* FPHashTagViewController.swift in Sources */,
 				105756351F7E93B900DF3352 /* FPUser.swift in Sources */,
 				102EA05D1F82E4030051D6D1 /* FPCardCollectionViewCell.swift in Sources */,
-				10721AB11FA28A0800C2911A /* FPAccountHeader.swift in Sources */,
+				10721AB11FA28A0800C2911A /* FPAccountHeaderCell.swift in Sources */,
 				10E1DB2C1F84106F001CDB18 /* FPAuthPickerViewController.swift in Sources */,
 				10AC7EDB2057903200B73B29 /* UITextViewPlaceholder.swift in Sources */,
 				10FEA3D41FAB927200BAD9FD /* FPPostDetailViewController.swift in Sources */,

@@ -67,25 +67,29 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     if #available(iOS 10.0, *) {
-      // For iOS 10 display notification (sent via APNS)
-      UNUserNotificationCenter.current().delegate = self
+      
+        // For iOS 10 display notification (sent via APNS)
+      
+        UNUserNotificationCenter.current().delegate = self
 
-      let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-      UNUserNotificationCenter.current().requestAuthorization(
+      
+        let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+      
+        UNUserNotificationCenter.current().requestAuthorization(
         options: authOptions,
         completionHandler: { granted, _ in
-          if granted {
-            if let uid = Auth.auth().currentUser?.uid {
-              self.database.reference(withPath: "people/\(uid)/notificationEnabled").setValue(true)
-            } else {
-              self.notificationGranted = true
-            }
-          }
+              if granted {
+                if let uid = Auth.auth().currentUser?.uid {
+                  self.database.reference(withPath: "people/\(uid)/notificationEnabled").setValue(true)
+                } else {
+                  self.notificationGranted = true
+                }
+              }
       })
     } else {
-      let settings: UIUserNotificationSettings =
-        UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
-      application.registerUserNotificationSettings(settings)
+          let settings: UIUserNotificationSettings =
+            UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
+          application.registerUserNotificationSettings(settings)
     }
 
     application.registerForRemoteNotifications()
@@ -99,6 +103,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     //  ((Auth.auth().currentUser != nil) ? [FUIGoogleAuth()] as [FUIAuthProvider] : [FUIGoogleAuth(), FUIAnonymousAuth()//, FUIFacebookAuth
     //] as [FUIAuthProvider])
     authUI?.providers = providers
+    
     return true
   }
 
@@ -158,14 +163,24 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   }
 
   func observeBlocks() {
-    blockedRef.observe(.childAdded) { self.blocked.insert($0.key) }
-    blockingRef.observe(.childAdded) { self.blocking.insert($0.key) }
-    blockedRef.observe(.childRemoved) { self.blocked.remove($0.key) }
-    blockingRef.observe(.childRemoved) { self.blocking.remove($0.key) }
+        blockedRef.observe(.childAdded) { self.blocked.insert($0.key) }
+        blockingRef.observe(.childAdded) { self.blocking.insert($0.key) }
+        blockedRef.observe(.childRemoved) { self.blocked.remove($0.key) }
+        blockingRef.observe(.childRemoved) { self.blocking.remove($0.key) }
   }
 
   func isBlocked(_ postOrCommentSnapshot: DataSnapshot) -> Bool {
     let authorUid = postOrCommentSnapshot.childSnapshot(forPath: "author/uid").value as! String
+    
+    if blocked.contains(authorUid) || blocking.contains(authorUid) {
+        return true
+    }
+    
+    return false
+  }
+    
+  func isBlocked(post: FPPost) -> Bool {
+    let authorUid = post.author.uid
     
     if blocked.contains(authorUid) || blocking.contains(authorUid) {
         return true

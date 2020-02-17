@@ -22,30 +22,39 @@ class FPPostDetailViewController: FPFeedViewController {
 
   override func loadDataWithoutResettingEverything() {
     
-    if let post = fpPosts.first {
+    if let fpPost = fpPosts.first {
       
-        postsRef.child(post.postID).observeSingleEvent(of: .value, with: {
+        //postsRef.child(fpPost.postID).observeSingleEvent(of: .value, with: {
             
-            if $0.exists() && !self.appDelegate.isBlocked($0) {
-                self.updateSingleFPPostWithComments(post, postSnapshot: $0)
-                self.listenSingleFPPostForCommentsAndLikes(post)
+            //if $0.exists() && !self.appDelegate.isBlocked($0) {
+            if !self.appDelegate.isBlocked(post: fpPost) {
+                
+                self.updateSingleFPPostWithComments(fpPost/*, postSnapshot: $0*/)
+                
+                self.listenSingleFPPostForCommentsAndLikes(fpPost)
+                
             } else {
                 self.navigationController?.popViewController(animated: true)
             }
-        })
+        //})
         
     } else {
+        
         createSingleFPPostWithPostSnapshot(postSnapshot)
+        
     }
   }
 
   override func optionPost(_ post: FPPost, _ button: UIButton, completion: (() -> Swift.Void)? = nil) {
     
-    super.optionPost(post, button, completion: { self.navigationController?.popViewController(animated: true) })
+    super.optionPost(post, button, completion: {
+        self.navigationController?.popViewController(animated: true) })
+    
   }
 
   override func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell,
                                forItemAt indexPath: IndexPath) {
+    
   }
 
   override func awakeFromNib() {

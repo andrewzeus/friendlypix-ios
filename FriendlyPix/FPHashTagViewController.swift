@@ -28,6 +28,7 @@ class FPHashTagViewController: UICollectionViewController, UICollectionViewDeleg
       let ref = Database.database().reference()
       
       var hashtagPostIds: [String: Any]?
+    
       var postSnapshots = [DataSnapshot]()
     
       var loadingPostSnapshotsCount = 0
@@ -37,41 +38,41 @@ class FPHashTagViewController: UICollectionViewController, UICollectionViewDeleg
       lazy var appDelegate = UIApplication.shared.delegate as! AppDelegate
 
   
-  override func viewDidLoad() {
+      override func viewDidLoad() {
+            
+            super.viewDidLoad()
         
-        super.viewDidLoad()
-    
-        navigationItem.title = "#\(hashtag)"
-  }
+            navigationItem.title = "#\(hashtag)"
+      }
 
-  override func viewDidAppear(_ animated: Bool) {
-    
-        super.viewDidAppear(animated)
-    
-        loadData()
-  }
+      override func viewDidAppear(_ animated: Bool) {
+        
+            super.viewDidAppear(animated)
+        
+            loadData()
+      }
 
-  override func viewWillDisappear(_ animated: Bool) {
-    super.viewWillDisappear(animated)
-    
-    for firebaseRef in firebaseRefs {
-      firebaseRef.removeAllObservers()
-    }
-    
-    firebaseRefs = [DatabaseReference]()
-  }
+      override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        for firebaseRef in firebaseRefs {
+          firebaseRef.removeAllObservers()
+        }
+        
+        firebaseRefs = [DatabaseReference]()
+      }
 
   func registerForHashtagPostIdsDeletion() {
     
-    let hashtagPostsRef = database.reference(withPath: "hashtags/\(hashtag)")
+    let hashtagPostIdsRef = database.reference(withPath: "hashtags/\(hashtag)")
     
-    hashtagPostsRef.observe(.childRemoved, with: { hashtagPostIdSnapshot in
+    hashtagPostIdsRef.observe(.childRemoved, with: { hashtagPostIdSnapshot in
       
         var index = 0
       
-        for post in self.postSnapshots {
+        for postSnapshot in self.postSnapshots {
             
-            if post.key == hashtagPostIdSnapshot.key {
+            if postSnapshot.key == hashtagPostIdSnapshot.key {
                 
                 self.postSnapshots.remove(at: index)
                 self.loadingPostSnapshotsCount -= 1
@@ -88,7 +89,7 @@ class FPHashTagViewController: UICollectionViewController, UICollectionViewDeleg
   }
 
 
-  func loadAllHashtagPostIds() {
+  func loadAllHashtagPostIdsWithHashtagRef() {
     
     database.reference(withPath: "hashtags/\(hashtag.lowercased())").observeSingleEvent(of: .value, with: {
       
@@ -97,6 +98,7 @@ class FPHashTagViewController: UICollectionViewController, UICollectionViewDeleg
             if !self.postSnapshots.isEmpty {
                 
                 var index = self.postSnapshots.count - 1
+                
                 
                 self.collectionView?.performBatchUpdates({
                     
@@ -116,15 +118,19 @@ class FPHashTagViewController: UICollectionViewController, UICollectionViewDeleg
                     
                 }, completion: nil)
                 
+                
+                
                 self.hashtagPostIds = htagPostIds
                 
                 self.loadingPostSnapshotsCount = htagPostIds.count
+                
                 
             } else {
           
                 self.hashtagPostIds = htagPostIds
           
-                self.loadAllPostSnapshotsWithHashtagPostIds()
+                self.loadAllPostSnapshotsWithPostsRef()
+                
             }
         
             self.registerForHashtagPostIdsDeletion()
@@ -133,25 +139,28 @@ class FPHashTagViewController: UICollectionViewController, UICollectionViewDeleg
   }
 
   func loadData() {
-        loadAllHashtagPostIds()
+    
+        loadAllHashtagPostIdsWithHashtagRef()
+    
   }
 
   override func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell,
                                forItemAt indexPath: IndexPath) {
     if indexPath.item == (loadingPostSnapshotsCount - 3) {
         
-        loadAllPostSnapshotsWithHashtagPostIds()
+        loadAllPostSnapshotsWithPostsRef()
     
     }
   }
 
-  func loadAllPostSnapshotsWithHashtagPostIds() {
+  func loadAllPostSnapshotsWithPostsRef() {
     
     loadingPostSnapshotsCount = postSnapshots.count + 12
     
     self.collectionView?.performBatchUpdates({
       
         for _ in 1...12 {
+            
             if let postId = self.hashtagPostIds?.popFirst()?.key {
               
                 database.reference(withPath: "posts/\(postId)").observeSingleEvent(of: .value, with: { postSnapshot in
@@ -162,8 +171,11 @@ class FPHashTagViewController: UICollectionViewController, UICollectionViewDeleg
                 })
                 
             } else {
-              break
+                
+                break
+                
             }
+            
         }
         
     }, completion: nil)

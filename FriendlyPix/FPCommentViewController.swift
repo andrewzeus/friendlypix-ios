@@ -18,17 +18,24 @@ import Firebase
 import MaterialComponents
 
 class FPCommentViewController: UICollectionViewController, UITextViewDelegate {
-  var post: FPPost!
-  var comments: [FPComment]!
-  lazy var appDelegate = UIApplication.shared.delegate as! AppDelegate
-  lazy var currentUser = Auth.auth().currentUser!
-  lazy var currentUserId = currentUser.uid
+  
+    var post: FPPost!
+  
+    var comments: [FPComment]!
+  
+    lazy var appDelegate = UIApplication.shared.delegate as! AppDelegate
+  
+    lazy var currentUser = Auth.auth().currentUser!
+  
+    lazy var currentUserId = currentUser.uid
 
-  lazy var database = Database.database()
   
-  lazy var commentsRef = database.reference(withPath: "comments/\(post.postID)")
+    lazy var database = Database.database()
   
-  var commentQuery: DatabaseQuery!
+  
+    lazy var commentsRef = database.reference(withPath: "comments/\(post.postID)")
+  
+    var commentQuery: DatabaseQuery!
     
   let attributes = [NSAttributedString.Key.font: UIFont.mdc_preferredFont(forMaterialTextStyle: .body2)]
   let attributes2 = [NSAttributedString.Key.font: UIFont.mdc_preferredFont(forMaterialTextStyle: .body1)]
@@ -96,10 +103,10 @@ class FPCommentViewController: UICollectionViewController, UITextViewDelegate {
 
     let action = MDCSnackbarMessageAction()
     action.handler = {
-      self.requestWorkItem?.cancel()
-      let index = min(indexPath.item, self.comments.count)
-      self.comments.insert(comment, at: index)
-      self.collectionView?.insertItems(at: [IndexPath(item: index, section: 1)])
+          self.requestWorkItem?.cancel()
+          let index = min(indexPath.item, self.comments.count)
+          self.comments.insert(comment, at: index)
+          self.collectionView?.insertItems(at: [IndexPath(item: index, section: 1)])
     }
     action.title = "Undo"
     commentDeleteText.action = action
@@ -201,14 +208,16 @@ class FPCommentViewController: UICollectionViewController, UITextViewDelegate {
     commentQuery = commentsRef
     
     if let lastCommentId = lastCommentId {
-      commentQuery = commentQuery.queryOrderedByKey().queryStarting(atValue: lastCommentId)
+        commentQuery = commentQuery.queryOrderedByKey().queryStarting(atValue: lastCommentId)
     } else {
-      inputTextView.becomeFirstResponder()
+        inputTextView.becomeFirstResponder()
     }
     
     commentQuery.observe(.childAdded, with: { dataSnaphot in
           if dataSnaphot.key != lastCommentId && !self.appDelegate.isBlocked(dataSnaphot){
+                
                 self.comments.append(FPComment(snapshot: dataSnaphot))
+                
                 let index = IndexPath(item: self.comments.count - 1, section: 1)
                 self.collectionView?.insertItems(at: [index])
                 self.updatedLabel = (self.collectionView?.cellForItem(at: index) as! MDCSelfSizingStereoCell).titleLabel
@@ -352,9 +361,11 @@ class FPCommentViewController: UICollectionViewController, UITextViewDelegate {
   }
 
   override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    
     if section == 0 {
       return 1
     }
+    
     return comments.count
   }
 

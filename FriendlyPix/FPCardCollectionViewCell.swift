@@ -38,10 +38,12 @@ class FPCardCollectionViewCell: MDCCardCollectionCell {
   @IBOutlet weak private var comment1Label: UILabel!
   @IBOutlet weak private var comment2Label: UILabel!
   @IBOutlet weak private var viewAllCommentsLabel: UIButton!
+  
   var commentLabels: [UILabel]?
   let attributes = [NSAttributedString.Key.font: UIFont.mdc_preferredFont(forMaterialTextStyle: .body2)]
 
   var post: FPPost!
+    
   weak var delegate: FPCardCollectionViewCellDelegate?
   var labelConstraints: [NSLayoutConstraint]!
   public var imageConstraint: NSLayoutConstraint?
@@ -83,15 +85,20 @@ class FPCardCollectionViewCell: MDCCardCollectionCell {
     if Auth.auth().currentUser!.isAnonymous {
       likeButton.isEnabled = false
     }
+    
     self.post = post
+    
     let postAuthor = post.author
+    
     if !isDryRun, let profilePictureURL = postAuthor.profilePictureURL {
       UIImage.circleImage(with: profilePictureURL, to: authorImageView)
       authorImageView.accessibilityLabel = postAuthor.fullname
     }
+    
     authorLabel.text = postAuthor.fullname
     dateLabel.text = post.postDate.timeAgo()
     postImageView.tag = index
+    
     if !isDryRun {
       let trace = Performance.startTrace(name: "post_load")
       postImageView?.sd_setImage(with: post.thumbURL, completed: { image, error, cacheType, url in
@@ -119,6 +126,7 @@ class FPCardCollectionViewCell: MDCCardCollectionCell {
                                                             action: #selector(handleTapOnProfileLabel(recognizer:))))
     likesLabel.text = post.likeCount == 1 ? "1 like" : "\(post.likeCount) likes"
     likesLabel.font = UIFont.mdc_preferredFont(forMaterialTextStyle: .body2)
+    
     if post.isLiked {
       likeButton.setImage(#imageLiteral(resourceName: "ic_favorite"), for: .normal)
       likeButton.accessibilityLabel = "you liked this post"
@@ -136,6 +144,7 @@ class FPCardCollectionViewCell: MDCCardCollectionCell {
 
     let betweenConstant: CGFloat = 2
     let bottomConstant: CGFloat = 12
+    
     let commentCount = post.comments.count
     switch commentCount {
     case 0:
@@ -179,7 +188,9 @@ class FPCardCollectionViewCell: MDCCardCollectionCell {
       attributeComment(index: 0)
       attributeComment(index: 1)
     }
+    
     NSLayoutConstraint.activate(labelConstraints)
+    
   }
 
   private func attributeComment(index: Int) {
@@ -216,6 +227,7 @@ class FPCardCollectionViewCell: MDCCardCollectionCell {
 
   override func prepareForReuse() {
     super.prepareForReuse()
+    
     NSLayoutConstraint.deactivate(labelConstraints)
     labelConstraints = nil
   }
@@ -229,11 +241,17 @@ class FPCardCollectionViewCell: MDCCardCollectionCell {
   }
 
   @objc func handleTapOnProfileLabel(recognizer: UITapGestureRecognizer) {
+    
     let touchIndex = recognizer.touchIndexInLabel(label: titleLabel)
+    
     if touchIndex < post.author.fullname.count {
-      profileTapped()
+        
+        profileTapped()
+        
     } else if let tag = titleLabel.attributedText?.attribute(NSAttributedString.Key.link, at: touchIndex, effectiveRange: nil) as? String {
-      delegate?.showTaggedPhotos(String(tag.dropFirst()))
+        
+        delegate?.showTaggedPhotos(String(tag.dropFirst()))
+        
     }
   }
 

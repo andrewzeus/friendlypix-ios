@@ -48,7 +48,7 @@ class FPUser {
     return FPUser(user: Auth.auth().currentUser!)
   }
 
-  func author() -> [String: String] {
+  func authorDict() -> [String: String] {
     return ["uid": uid, "full_name": fullname, "profile_picture": profilePictureURL?.absoluteString ?? ""]
   }
 }
