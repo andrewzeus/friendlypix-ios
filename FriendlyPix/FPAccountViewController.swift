@@ -20,52 +20,53 @@ import MaterialComponents
 
 class FPAccountViewController: UICollectionViewController, UICollectionViewDelegateFlowLayout {
   
-    var headerView: FPAccountHeaderCell!
+        var headerView: FPAccountHeaderCell!
     
-    var profile: FPUser!
-    let uid = Auth.auth().currentUser!.uid
+        var profile: FPUser!
+    
+        let currentUserId = Auth.auth().currentUser!.uid
   
-    let database = Database.database()
-    let ref = Database.database().reference()
+        let database = Database.database()
+        let ref = Database.database().reference()
   
-    var postIds: [String: Any]?
-    var postSnapshots = [DataSnapshot]()
+        var postIds: [String: Any]?
+        var postSnapshots = [DataSnapshot]()
   
-    var loadingPostCount = 0
+        var loadingPostCount = 0
     
-    var firebaseRefs = [DatabaseReference]()
+        var firebaseRefs = [DatabaseReference]()
     
-    var insets: UIEdgeInsets!
+        var insets: UIEdgeInsets!
     
-    lazy var appDelegate = UIApplication.shared.delegate as! AppDelegate
+        lazy var appDelegate = UIApplication.shared.delegate as! AppDelegate
 
-      override func viewDidLoad() {
-        super.viewDidLoad()
-        
-        navigationItem.title = profile.fullname.localizedCapitalized
-      }
+          override func viewDidLoad() {
+            super.viewDidLoad()
+            
+            navigationItem.title = profile.fullname.localizedCapitalized
+          }
 
-      override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        
-        loadData()
-      }
+          override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            
+            loadData()
+          }
 
-      override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        
-        for firebaseRef in firebaseRefs {
-          firebaseRef.removeAllObservers()
-        }
-        
-        firebaseRefs = [DatabaseReference]()
-      }
+          override func viewWillDisappear(_ animated: Bool) {
+            super.viewWillDisappear(animated)
+            
+            for firebaseRef in firebaseRefs {
+              firebaseRef.removeAllObservers()
+            }
+            
+            firebaseRefs = [DatabaseReference]()
+          }
 
       @IBAction func valueChanged(_ sender: Any) {
         
-        if profile.uid == uid {
+        if profile.uid == currentUserId {
             
-          let notificationEnabled = database.reference(withPath: "people/\(uid)/notificationEnabled")
+          let notificationEnabled = database.reference(withPath: "people/\(currentUserId)/notificationEnabled")
           
             if headerView.followSwitch.isOn {
                 notificationEnabled.setValue(true)
@@ -76,6 +77,7 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
             return
         }
 
+        //when
         toggleFollow(headerView.followSwitch.isOn)
         
       }
@@ -93,7 +95,7 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
 
   func registerToFollowStatusUpdate() {
     
-        let followStatusRef = database.reference(withPath: "people/\(uid)/following/\(profile.uid)")
+        let followStatusRef = database.reference(withPath: "people/\(currentUserId)/following/\(profile.uid)")
         
         followStatusRef.observe(.value) {
           self.headerView.followSwitch.isOn = $0.exists()
@@ -105,7 +107,7 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
 
   func registerToNotificationEnabledStatusUpdate() {
     
-        let notificationEnabledRef  = database.reference(withPath: "people/\(uid)/notificationEnabled")
+        let notificationEnabledRef  = database.reference(withPath: "people/\(currentUserId)/notificationEnabled")
         
         notificationEnabledRef.observe(.value) {
           self.headerView.followSwitch.isOn = $0.exists()
@@ -182,7 +184,7 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
     
   }
 
-  func loadUserPostIds() {
+  func loadUserPostIdsFromPeopleUidPostsRef() {
     
     database.reference(withPath: "people/\(profile.uid)/posts").observeSingleEvent(of: .value, with: {
       
@@ -190,50 +192,51 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
         
             if !self.postSnapshots.isEmpty {
           
-                var index = self.postSnapshots.count - 1
-          
-                self.collectionView?.performBatchUpdates({
-            
-                    for postSnapshot in self.postSnapshots.reversed() {
+                    var index = self.postSnapshots.count - 1
               
-                        if pstIds.removeValue(forKey: postSnapshot.key) == nil {
+                    self.collectionView?.performBatchUpdates({
                 
-                            self.postSnapshots.remove(at: index)
+                        for postSnapshot in self.postSnapshots.reversed() {
+                  
+                            // if postSnapshot.key is not present in pstIds, then remove this from self.postSnapshots with updating UI accordingly
+                            if pstIds.removeValue(forKey: postSnapshot.key) == nil {
+                    
+                                self.postSnapshots.remove(at: index)
+                    
+                                self.collectionView?.deleteItems(at: [IndexPath(item: index, section: 1)])
+                    
+                                return
+                  
+                            }
+                            
+                  
+                            index -= 1
                 
-                            self.collectionView?.deleteItems(at: [IndexPath(item: index, section: 1)])
-                
-                            return
-              
                         }
-                        
               
-                        index -= 1
+                    }, completion: nil)
+              
+              
+                    self.postIds = pstIds
+              
+                    self.loadingPostCount = pstIds.count
             
-                    }
-          
-                }, completion: nil)
-          
-          
-                self.postIds = pstIds
-          
-                self.loadingPostCount = pstIds.count
-            
-        } else {
+            } else {
 
-                self.postIds = pstIds
+                    self.postIds = pstIds
           
-                self.loadPostSnapshots()
+                    self.loadPostSnapshots()
             
+            }
+            
+            self.registerForPostsDeletion()
         }
-            
-        self.registerForPostsDeletion()
-      }
     })
   }
 
   func loadData() {
     
-        if profile.uid == uid {
+        if profile.uid == currentUserId {
             registerToNotificationEnabledStatusUpdate()
         } else {
             registerToFollowStatusUpdate()
@@ -245,14 +248,18 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
         
         registerForPostsCount()
         
-        loadUserPostIds()
+        loadUserPostIdsFromPeopleUidPostsRef()
   }
 
   override func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell,
                                forItemAt indexPath: IndexPath) {
+    
     if indexPath.section == 1 && indexPath.item == (loadingPostCount - 3) {
+        
         loadPostSnapshots()
+        
     }
+    
   }
 
   func loadPostSnapshots() {
@@ -301,7 +308,7 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
         let header = collectionView.dequeueReusableCell(withReuseIdentifier: "header", for: indexPath) as! FPAccountHeaderCell
         header.inkColor = .clear
         headerView = header
-          if profile.uid == uid {
+          if profile.uid == currentUserId {
             header.followLabel.text = "Notifications"
             header.followSwitch.accessibilityLabel = header.followSwitch.isOn ? "Notifications are on" : "Notifications are off"
             header.followSwitch.accessibilityHint = "Double-tap to \(header.followSwitch.isOn ? "disable" : "enable") notifications"
@@ -331,7 +338,7 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
 
   lazy var moreAlert: UIAlertController = {
     let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-    if profile.uid == uid {
+    if profile.uid == currentUserId {
       alert.addAction(UIAlertAction(title: "Sign out", style: .default , handler:{ (UIAlertAction)in
         self.present(self.feedViewController.signOutAlert, animated:true, completion:nil)
       }))
@@ -362,7 +369,7 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
     
     feedViewController.followChangedFlag = true
     
-    let myFeed = "feed/\(uid)/"
+    let myFeed = "feed/\(currentUserId)/"
     
     database.reference(withPath: "people/\(profile.uid)/posts").observeSingleEvent(of: .value, with: { snapshot in
       
@@ -385,12 +392,12 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
         
             // Add/remove followed user to the 'following' list.
         
-            updateData["people/\(self.uid)/following/\(self.profile.uid)"] = follow ? lastPostID : NSNull()
+            updateData["people/\(self.currentUserId)/following/\(self.profile.uid)"] = follow ? lastPostID : NSNull()
 
         
             // Add/remove signed-in user to the list of followers.
         
-            updateData["followers/\(self.profile.uid)/\(self.uid)"] = follow ? true : NSNull()
+            updateData["followers/\(self.profile.uid)/\(self.currentUserId)"] = follow ? true : NSNull()
         
         
             self.ref.updateChildValues(updateData) { error, _ in
@@ -408,9 +415,11 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
   }
 
   func collectionView(_ collectionView: UICollectionView, cellHeightAt indexPath: IndexPath) -> CGFloat {
+    
     if indexPath.section == 0 {
       return 112
     }
+    
     return MDCCeil(((self.collectionView?.bounds.width)! - 14) * 0.325)
   }
 
@@ -456,8 +465,8 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
       if self.headerView.followSwitch.isOn {
         self.toggleFollow(false)
       }
-      let updateData = ["blocked/\(self.profile.uid)/\(self.uid)": true,
-                        "blocking/\(self.uid)/\(self.profile.uid)" : true]
+      let updateData = ["blocked/\(self.profile.uid)/\(self.currentUserId)": true,
+                        "blocking/\(self.currentUserId)/\(self.profile.uid)" : true]
       self.ref.updateChildValues(updateData) { error, _ in
         if let error = error {
           print(error.localizedDescription)
@@ -474,8 +483,8 @@ class FPAccountViewController: UICollectionViewController, UICollectionViewDeleg
     let cancelAction = MDCAlertAction(title:"Cancel", handler: nil)
     let unblockAction = MDCAlertAction(title:"Unblock") { _ in
 
-      let updateData = ["blocked/\(self.profile.uid)/\(self.uid)": NSNull(),
-                        "blocking/\(self.uid)/\(self.profile.uid)" : NSNull()]
+      let updateData = ["blocked/\(self.profile.uid)/\(self.currentUserId)": NSNull(),
+                        "blocking/\(self.currentUserId)/\(self.profile.uid)" : NSNull()]
       self.ref.updateChildValues(updateData) { error, _ in
         if let error = error {
           print(error.localizedDescription)

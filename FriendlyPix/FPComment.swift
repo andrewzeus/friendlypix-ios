@@ -23,13 +23,19 @@ class FPComment {
   var from: FPUser
 
   init(snapshot: DataSnapshot) {
+    
     self.commentID = snapshot.key
+    
     let value = snapshot.value as! [String: Any]
+    
     self.text = value["text"] as? String ?? ""
+    
     let timestamp = value["timestamp"] as! Double
     self.postDate = Date(timeIntervalSince1970: timestamp / 1_000.0)
+    
     let author = value["author"] as! [String: String]
     self.from = FPUser(dictionary: author)
+    
   }
 }
 
